@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Handy Notes</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="add_widget">Add Widget</string>
+    <string name="about_us">About Us</string>
+    <string name="sync_notes">Sync Notes</string>
+    <string name="add_note">Add Note</string>
+    <string name="account">Account</string>
+</resources>

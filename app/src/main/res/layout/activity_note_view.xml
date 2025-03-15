@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="vv.utility.vaibhav.handynotes.NoteView">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/note_view_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
+
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:id="@+id/noteButton"
+        android:layout_below="@+id/note_view_toolbar"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:id="@+id/noteIdBackground"
+            android:src="@drawable/note_id_background" />
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="0"
+            android:id="@+id/noteId"
+            android:textSize="25sp"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="date&amp;time"
+            android:id="@+id/dateAndTime"
+            android:textSize="15dp"
+            android:gravity="right"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/horizontalScrollView"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@+id/noteIdBackground"
+            android:layout_toEndOf="@+id/noteIdBackground" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="some note"
+                android:id="@+id/noteName"
+                android:textSize="25dp"
+                android:layout_alignParentTop="true"
+                android:layout_toRightOf="@+id/noteIdBackground"
+                android:layout_toEndOf="@+id/noteIdBackground"
+                android:gravity="center_vertical" />
+        </HorizontalScrollView>
+
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/noteButton" >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="My Note"
+            android:id="@+id/noteNote"
+            android:layout_below="@+id/noteButton"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:textSize="20dp"
+            android:editable="true"
+            android:paddingLeft="10dp" />
+    </ScrollView>
+
+</RelativeLayout>
