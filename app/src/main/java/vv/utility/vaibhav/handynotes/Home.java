@@ -12,10 +12,9 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -165,23 +164,24 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_add_note:
-                showAddNoteLayout();
-                return true;
-
-            case R.id.action_account:
-                Intent intent = new Intent(getBaseContext(),AccountActivity.class);
-                startActivity(intent);
-                return true;
-
-            case R.id.action_about_us:
-                Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
-                return true;
-
-            default:
+//        switch (item.getItemId()) {
+//            case R.id.action_add_note:
+//                showAddNoteLayout();
+//                return true;
+//
+//            case R.id.action_account:
+//                Intent intent = new Intent(getBaseContext(),AccountActivity.class);
+//                startActivity(intent);
+//                return true;
+//
+//            case R.id.action_about_us:
+//                Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
+//                return true;
+//
+//            default:
+//                return super.onOptionsItemSelected(item);
+//        }
                 return super.onOptionsItemSelected(item);
-        }
     }
 
     public void refreshArrayList(){

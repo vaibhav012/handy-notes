@@ -21,8 +21,6 @@
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:id="@+id/widgetText"
-            android:layout_above="@+id/relativeLayout"
-            android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
             android:gravity="center_vertical"
             android:minLines="5"
@@ -36,9 +34,7 @@
             android:text="Update"
             android:id="@+id/update"
             android:layout_below="@+id/widgetText"
-            android:layout_alignRight="@+id/widgetText"
             android:layout_alignEnd="@+id/widgetText"
-            android:layout_alignLeft="@+id/widgetText"
             android:layout_alignStart="@+id/widgetText" />
 
         <Button
@@ -47,9 +43,7 @@
             android:text="Cancel"
             android:id="@+id/cancel"
             android:layout_below="@+id/update"
-            android:layout_alignRight="@+id/widgetText"
             android:layout_alignEnd="@+id/widgetText"
-            android:layout_alignLeft="@+id/widgetText"
             android:layout_alignStart="@+id/widgetText" />
 
     </RelativeLayout>

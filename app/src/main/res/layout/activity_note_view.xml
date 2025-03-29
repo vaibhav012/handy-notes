@@ -6,7 +6,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="vv.utility.vaibhav.handynotes.NoteView">
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/note_view_toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"

@@ -1,10 +1,10 @@
 package vv.utility.vaibhav.handynotes;
 
 import android.content.Intent;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -53,24 +53,25 @@ public class NoteView extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_add_note:
-                Intent intent = new Intent(getBaseContext(),Home.class);
-                intent.putExtra("fromAccounts","true");
-                startActivity(intent);
-                return true;
-
-            case R.id.action_account:
-                Intent intent1 = new Intent(getBaseContext(),AccountActivity.class);
-                startActivity(intent1);
-                return true;
-
-            case R.id.action_about_us:
-                Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
-                return true;
-
-            default:
+//        switch (item.getItemId()) {
+//            case R.id.action_add_note:
+//                Intent intent = new Intent(getBaseContext(),Home.class);
+//                intent.putExtra("fromAccounts","true");
+//                startActivity(intent);
+//                return true;
+//
+//            case R.id.action_account:
+//                Intent intent1 = new Intent(getBaseContext(),AccountActivity.class);
+//                startActivity(intent1);
+//                return true;
+//
+//            case R.id.action_about_us:
+//                Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
+//                return true;
+//
+//            default:
+//                return super.onOptionsItemSelected(item);
+//        }
                 return super.onOptionsItemSelected(item);
-        }
     }
 }

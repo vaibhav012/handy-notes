@@ -29,7 +29,7 @@ public class WidgetManager extends AppWidgetProvider {
             widget.setRemoteAdapter(appWidgetIds[i], R.id.widgetListView, svcIntent);
 
             Intent clickIntent=new Intent(ctxt,  EditWidget.class);
-            PendingIntent clickPI=PendingIntent.getActivity(ctxt, 0, clickIntent, 0);
+            PendingIntent clickPI=PendingIntent.getActivity(ctxt, 0, clickIntent, PendingIntent.FLAG_IMMUTABLE);
             widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
 
             appWidgetManager.updateAppWidget(appWidgetIds[i], widget);
