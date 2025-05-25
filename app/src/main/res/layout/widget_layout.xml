@@ -7,6 +7,12 @@
     android:clickable="true"
     android:contextClickable="true">
 
+    <Spinner
+        android:id="@+id/widget_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp" />
+
     <ListView
         android:id="@+id/widgetListView"
         android:layout_width="match_parent"
