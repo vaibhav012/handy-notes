@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:id="@+id/fullLayout"
     android:clickable="true"
     android:contextClickable="true">
@@ -10,17 +10,41 @@
     <ListView
         android:id="@+id/widgetListView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:background="#6062c7"
         android:layout_below="@+id/linearLayout" />
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:id="@+id/linearLayout"
-        android:background="#4052b5"></LinearLayout>
+        android:background="#4052b5"
+        android:gravity="center_vertical">
+        
+        <ImageButton
+            android:id="@+id/prevNoteButton"
+            android:layout_width="0dp"
+            android:layout_height="28dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_arrow_left"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Previous Note"
+            android:scaleType="fitCenter"
+            android:padding="2dp" />
+        
+        <ImageButton
+            android:id="@+id/nextNoteButton"
+            android:layout_width="0dp"
+            android:layout_height="28dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_arrow_right"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Next Note"
+            android:scaleType="fitCenter"
+            android:padding="2dp" />
+    </LinearLayout>
 
 </RelativeLayout>
