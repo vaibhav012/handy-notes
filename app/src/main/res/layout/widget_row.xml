@@ -4,7 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:textAppearance="?android:attr/textAppearanceLarge"
-    android:gravity="center_vertical"
+    android:textColor="#FFFFFF"
+    android:gravity="top|start"
     android:paddingLeft="6dip"
+    android:paddingTop="6dip"
+    android:paddingRight="6dip"
+    android:paddingBottom="6dip"
     android:minHeight="200dip"
-    android:textSize="18dp" />
+    android:textSize="18dp"
+    android:singleLine="false" />

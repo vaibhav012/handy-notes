@@ -36,7 +36,7 @@
 
         <activity
             android:name=".EditWidget"
-            android:label="Edit Widget Note"
+            android:label=""
             android:noHistory="true"
             android:theme="@style/Theme.Translucent" >
         </activity>
@@ -61,6 +61,10 @@
             android:label="Handy Notes">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="vv.utility.vaibhav.handynotes.PREV_NOTE" />
+                <action android:name="vv.utility.vaibhav.handynotes.NEXT_NOTE" />
             </intent-filter>
 
             <meta-data

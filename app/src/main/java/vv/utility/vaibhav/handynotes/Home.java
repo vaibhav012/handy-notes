@@ -101,6 +101,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                     refreshArrayList();
                     addNoteNote.getText().clear();
                     addNoteName.getText().clear();
+                    updateWidget();
                 }
             }
         });
@@ -137,6 +138,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                 refreshArrayList();
                 noteIdForOptions = -1;
                 optionsLayout.setVisibility(View.GONE);
+                updateWidget();
             }
         });
 
