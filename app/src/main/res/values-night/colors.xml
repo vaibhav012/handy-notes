@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#9A86D0</color>
+    <color name="colorPrimaryDark">#7C6BA0</color>
+    <color name="colorAccent">#FF6B9D</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Modern Material Design 3 Colors - Dark Mode -->
+    <color name="surface">#1C1B1F</color>
+    <color name="surface_variant">#2B2930</color>
+    <color name="primary">#D0BCFF</color>
+    <color name="on_primary">#381E72</color>
+    <color name="secondary">#CCC2DC</color>
+    <color name="on_secondary">#332D41</color>
+    <color name="tertiary">#EFB8C8</color>
+    <color name="outline">#938F99</color>
+    <color name="outline_variant">#49454F</color>
+    <color name="background">#1C1B1F</color>
+    <color name="on_background">#E6E1E5</color>
+    <color name="error">#F2B8B5</color>
+    <color name="on_error">#601410</color>
+</resources>
+
