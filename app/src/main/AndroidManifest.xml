@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Internet Permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Network State Permissions -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <application
         android:allowBackup="true"
         android:icon="@drawable/icon"
@@ -41,19 +35,6 @@
             android:theme="@style/Theme.Translucent" >
         </activity>
 
-        <activity android:name=".RegisterActivity"
-            android:parentActivityName=".Home"
-            android:label="Account"
-            android:noHistory="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-        </activity>
-
-        <activity android:name=".AccountActivity"
-            android:parentActivityName=".Home"
-            android:label="Account"
-            android:noHistory="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-        </activity>
 
         <receiver
             android:name=".WidgetManager"

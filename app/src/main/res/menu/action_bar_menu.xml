@@ -2,6 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!--
     <item
         android:id="@+id/action_add_note"
         android:title="@string/add_note"
@@ -16,5 +17,6 @@
     <item android:id="@+id/action_about_us"
         android:title="@string/about_us"
         app:showAsAction="never"/>
+    -->
 
 </menu>
