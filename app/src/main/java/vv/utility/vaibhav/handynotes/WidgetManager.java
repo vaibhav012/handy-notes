@@ -42,8 +42,6 @@ public class WidgetManager extends AppWidgetProvider {
             svcIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[i]);
             svcIntent.putExtra("text", noteText);
             svcIntent.putExtra("noteId", selectedNoteId);
-            // Add timestamp to ensure unique URI and force refresh
-            svcIntent.setData(Uri.parse(svcIntent.toUri(Intent.URI_INTENT_SCHEME) + "#" + System.currentTimeMillis()));
 
             setupWidget(ctxt, appWidgetManager, appWidgetIds[i], selectedNoteId, svcIntent);
         }
@@ -83,10 +81,10 @@ public class WidgetManager extends AppWidgetProvider {
                     newNoteId = getNextNoteId(dbHelper, currentNoteId);
                 }
                 
-                // Save the new note ID (use apply() for async, non-blocking write)
+                // Save the new note ID (use commit() for synchronous write to ensure it's saved before widget update)
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putInt("widget_note_" + appWidgetId, newNoteId);
-                editor.apply();
+                editor.commit();
                 
                 // Update the widget directly for faster response
                 AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
@@ -111,15 +109,20 @@ public class WidgetManager extends AppWidgetProvider {
         try {
             DBHelper dbHelper = new DBHelper(context);
             String noteText = dbHelper.getNote(noteId);
-            if (noteText == null) {
+            if (noteText == null || noteText.equals("NULL")) {
                 noteText = "";
             }
+            
+            // Ensure SharedPreferences is updated before creating the Intent
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt("widget_note_" + appWidgetId, noteId);
+            editor.commit();
             
             Intent svcIntent = new Intent(context, WidgetService.class);
             svcIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             svcIntent.putExtra("text", noteText);
             svcIntent.putExtra("noteId", noteId);
-            svcIntent.setData(Uri.parse("widget://update/" + appWidgetId + "#" + System.currentTimeMillis()));
             
             setupWidget(context, appWidgetManager, appWidgetId, noteId, svcIntent);
         } catch (Exception e) {
@@ -131,10 +134,34 @@ public class WidgetManager extends AppWidgetProvider {
 
     private void setupWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, int noteId, Intent svcIntent) {
         RemoteViews widget = new RemoteViews(context.getPackageName(), R.layout.widget_layout);
-        widget.setRemoteAdapter(appWidgetId, R.id.widgetListView, svcIntent);
         
-        // Force adapter refresh
-        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widgetListView);
+        // Get note data from database
+        DBHelper dbHelper = new DBHelper(context);
+        String noteName = dbHelper.getNoteName(noteId);
+        if (noteName == null || noteName.equals("NULL") || noteName.trim().isEmpty()) {
+            noteName = "My First Note";
+        } else {
+            noteName = noteName.trim();
+        }
+        
+        String noteText = dbHelper.getNote(noteId);
+        if (noteText == null || noteText.equals("NULL")) {
+            noteText = "";
+        }
+        
+        // Update the Intent with the latest note text to ensure consistency
+        svcIntent.putExtra("text", noteText);
+        svcIntent.putExtra("noteId", noteId);
+        
+        // Set the note name in the widget header
+        widget.setTextViewText(R.id.widgetNoteName, noteName);
+        
+        // Create a unique URI that includes noteId and timestamp to force refresh
+        // This ensures Android doesn't cache the old factory when content changes
+        String uniqueUri = "widget://" + appWidgetId + "/" + noteId + "/" + System.currentTimeMillis();
+        svcIntent.setData(Uri.parse(uniqueUri));
+        
+        widget.setRemoteAdapter(appWidgetId, R.id.widgetListView, svcIntent);
         
         // Set up click intent for the note content
         Intent clickIntent = new Intent(context, EditWidget.class);
@@ -160,7 +187,12 @@ public class WidgetManager extends AppWidgetProvider {
         PendingIntent nextPI = PendingIntent.getBroadcast(context, appWidgetId * 10 + 2, nextIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         widget.setOnClickPendingIntent(R.id.nextNoteButton, nextPI);
         
+        // Update the widget - this updates both the note name and triggers the adapter refresh
         appWidgetManager.updateAppWidget(appWidgetId, widget);
+        
+        // Force adapter refresh - this triggers onDataSetChanged() in the factory
+        // The factory will read the latest noteId from SharedPreferences which we've already updated
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widgetListView);
     }
 
     private int getNextNoteId(DBHelper dbHelper, int currentNoteId) {
@@ -198,7 +230,7 @@ public class WidgetManager extends AppWidgetProvider {
     private ArrayList<Integer> getAllNoteIds(DBHelper dbHelper) {
         ArrayList<Integer> noteIds = new ArrayList<Integer>();
         
-        // Always include note 0 (Widget Note)
+        // Always include note 0 (My First Note)
         noteIds.add(0);
         
         // Add all other notes

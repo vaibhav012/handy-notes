@@ -41,7 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         Calendar calendar = Calendar.getInstance();
         String dateAndTime = "Date : "+calendar.get(Calendar.DATE)+"/"+calendar.get(Calendar.MONTH)+"/"+calendar.get(Calendar.YEAR)+
-                "  Time : "+calendar.get(Calendar.HOUR)+"."+calendar.get(Calendar.MINUTE)+"."+calendar.get(Calendar.SECOND);
+                "  Time : "+calendar.get(Calendar.HOUR_OF_DAY)+"."+calendar.get(Calendar.MINUTE)+"."+calendar.get(Calendar.SECOND);
 
         ContentValues values = new ContentValues();
         values.put(NOTE_ID, noteId);
@@ -133,7 +133,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         Calendar calendar = Calendar.getInstance();
         String dateAndTime = "Date : "+calendar.get(Calendar.DATE)+"/"+calendar.get(Calendar.MONTH)+"/"+calendar.get(Calendar.YEAR)+
-                "  Time : "+calendar.get(Calendar.HOUR)+"."+calendar.get(Calendar.MINUTE)+"."+calendar.get(Calendar.SECOND);
+                "  Time : "+calendar.get(Calendar.HOUR_OF_DAY)+"."+calendar.get(Calendar.MINUTE)+"."+calendar.get(Calendar.SECOND);
 
         ContentValues values = new ContentValues();
         values.put(NOTE_NAME, noteName);

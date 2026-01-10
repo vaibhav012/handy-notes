@@ -3,7 +3,9 @@ package vv.utility.vaibhav.handynotes;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
@@ -11,10 +13,12 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
     private String[] items;
     private Context ctxt=null;
     private int appWidgetId;
+    private int noteId;
 
     public WidgetViewsFactory(Context ctxt, Intent intent) {
         this.ctxt=ctxt;
         appWidgetId=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+        noteId = intent.getIntExtra("noteId", 0);
         String noteText = intent.getStringExtra("text");
         if (noteText != null && !noteText.isEmpty()) {
             // Display full text as a single item
@@ -77,6 +81,20 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
 
     @Override
     public void onDataSetChanged() {
-    // no-op
-}
+        // Reload the note text from the database to get the latest data
+        // Get the current noteId from SharedPreferences to ensure we have the correct note for this widget
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctxt);
+        int currentNoteId = prefs.getInt("widget_note_" + appWidgetId, noteId);
+        
+        // Update noteId to stay in sync
+        noteId = currentNoteId;
+        
+        DBHelper mydb = new DBHelper(ctxt);
+        String noteText = mydb.getNote(currentNoteId);
+        if (noteText != null && !noteText.isEmpty() && !noteText.equals("NULL")) {
+            items = new String[]{noteText};
+        } else {
+            items = new String[]{""};
+        }
+    }
 }

@@ -35,6 +35,23 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     ArrayList<String> noteNameList;
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh widget name when returning to activity
+        if (mydb != null) {
+            TextView widgetNoteName = (TextView) findViewById(R.id.WidgeNoteName);
+            if (widgetNoteName != null) {
+                String widgetName = mydb.getNoteName(0);
+                if (widgetName != null && !widgetName.equals("NULL") && !widgetName.trim().isEmpty()) {
+                    widgetNoteName.setText(widgetName.trim());
+                } else {
+                    widgetNoteName.setText("My First Note");
+                }
+            }
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
@@ -56,13 +73,20 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         final RelativeLayout widgetNoteButton = (RelativeLayout) findViewById(R.id.widgetNoteButton);
         final EditText addNoteName = (EditText) findViewById(R.id.addNoteName);
         final EditText addNoteNote = (EditText) findViewById(R.id.addNoteNote);
-        final Button optionsCancel = (Button) findViewById(R.id.optionsCancel);
-        final Button addToWidget = (Button) findViewById(R.id.addToWidget);
         final Button deleteNote = (Button) findViewById(R.id.deleteNote);
         //noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
 
         if(mydb.getCount() == 0)
-            mydb.addNote(0, "Widget Note", "Click to edit Widget Note");
+            mydb.addNote(0, "My First Note", "Click to edit My First Note");
+
+        // Load widget note name from database
+        TextView widgetNoteName = (TextView) findViewById(R.id.WidgeNoteName);
+        String widgetName = mydb.getNoteName(0);
+        if (widgetName != null && !widgetName.equals("NULL") && !widgetName.trim().isEmpty()) {
+            widgetNoteName.setText(widgetName.trim());
+        } else {
+            widgetNoteName.setText("My First Note");
+        }
 
         refreshArrayList();
 
@@ -99,24 +123,6 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             }
         });
 
-        optionsCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                noteIdForOptions = -1;
-                optionsLayout.setVisibility(View.GONE);
-            }
-        });
-
-        addToWidget.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mydb.updateNote(0,"Widget Note",mydb.getNote(noteIdForOptions));
-                noteIdForOptions = -1;
-                optionsLayout.setVisibility(View.GONE);
-                updateWidget();
-            }
-        });
-
         deleteNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -142,6 +148,16 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     public void showOptions(int noteId) {
         noteIdForOptions = noteId;
         optionsLayout.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (optionsLayout.getVisibility() == View.VISIBLE) {
+            noteIdForOptions = -1;
+            optionsLayout.setVisibility(View.GONE);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
