@@ -35,6 +35,13 @@
             android:theme="@style/Theme.Translucent" >
         </activity>
 
+        <activity
+            android:name=".ExportImportActivity"
+            android:parentActivityName=".Home"
+            android:label="Export/Import"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" >
+        </activity>
+
 
         <receiver
             android:name=".WidgetManager"

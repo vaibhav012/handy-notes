@@ -11,7 +11,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 public class DBHelper extends SQLiteOpenHelper {
 
@@ -146,5 +148,75 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT  * FROM " + NOTES_TABLE_NAME, null);
         return cursor.getCount();
+    }
+
+    // Get all notes as a list of Note objects for export
+    public List<Note> getAllNotes() {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        if (getCount() > 0) {
+            Cursor cursor = db.rawQuery("SELECT * FROM " + NOTES_TABLE_NAME + " ORDER BY " + NOTE_ID, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int noteId = cursor.getInt(0);
+                        String noteName = cursor.getString(1);
+                        String note = cursor.getString(2);
+                        String dateTime = cursor.getString(3);
+                        
+                        if (noteName != null && !noteName.trim().isEmpty() && !noteName.equals("NULL")) {
+                            notes.add(new Note(noteId, noteName, note, dateTime));
+                        }
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
+        }
+        db.close();
+        return notes;
+    }
+
+    // Import notes from a list (used after parsing JSON)
+    public void importNotes(List<Note> notes) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        
+        for (Note note : notes) {
+            ContentValues values = new ContentValues();
+            values.put(NOTE_ID, note.getNoteId());
+            values.put(NOTE_NAME, note.getNoteName());
+            values.put(NOTE, note.getNote());
+            values.put(DATE_TIME_COLUMN, note.getDateTime());
+            db.insert(NOTES_TABLE_NAME, null, values);
+        }
+        
+        db.close();
+    }
+
+    // Clear all notes (useful before import)
+    public void clearAllNotes() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(NOTES_TABLE_NAME, null, null);
+        db.close();
+    }
+
+    // Note data class for export/import
+    public static class Note {
+        private int noteId;
+        private String noteName;
+        private String note;
+        private String dateTime;
+
+        public Note(int noteId, String noteName, String note, String dateTime) {
+            this.noteId = noteId;
+            this.noteName = noteName;
+            this.note = note;
+            this.dateTime = dateTime;
+        }
+
+        public int getNoteId() { return noteId; }
+        public String getNoteName() { return noteName; }
+        public String getNote() { return note; }
+        public String getDateTime() { return dateTime; }
     }
 }

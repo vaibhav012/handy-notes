@@ -138,24 +138,31 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//            case R.id.action_add_note:
-//                showAddNoteLayout();
-//                return true;
-//
-//            case R.id.action_account:
-//                Intent intent = new Intent(getBaseContext(),AccountActivity.class);
-//                startActivity(intent);
-//                return true;
-//
-//            case R.id.action_about_us:
-//                Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
-//                return true;
-//
-//            default:
-//                return super.onOptionsItemSelected(item);
+        int id = item.getItemId();
+        
+        if (id == R.id.action_export_import) {
+            Intent intent = new Intent(getBaseContext(), ExportImportActivity.class);
+            startActivity(intent);
+            return true;
+        }
+
+//        if (id == R.id.action_add_note) {
+//            showAddNoteLayout();
+//            return true;
 //        }
-                return super.onOptionsItemSelected(item);
+//
+//        if (id == R.id.action_account) {
+//            Intent intent = new Intent(getBaseContext(),AccountActivity.class);
+//            startActivity(intent);
+//            return true;
+//        }
+//
+//        if (id == R.id.action_about_us) {
+//            Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
+//            return true;
+//        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     public void refreshArrayList(){

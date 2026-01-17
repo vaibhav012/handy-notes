@@ -8,4 +8,7 @@
     <string name="sync_notes">Sync Notes</string>
     <string name="add_note">Add Note</string>
     <string name="account">Account</string>
+    <string name="export_import">Export/Import</string>
+    <string name="export_notes">Export Notes</string>
+    <string name="import_notes">Import Notes</string>
 </resources>
