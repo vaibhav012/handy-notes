@@ -37,17 +37,9 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh widget name when returning to activity
+        // Refresh the note list when returning to activity
         if (mydb != null) {
-            TextView widgetNoteName = (TextView) findViewById(R.id.WidgeNoteName);
-            if (widgetNoteName != null) {
-                String widgetName = mydb.getNoteName(0);
-                if (widgetName != null && !widgetName.equals("NULL") && !widgetName.trim().isEmpty()) {
-                    widgetNoteName.setText(widgetName.trim());
-                } else {
-                    widgetNoteName.setText("My First Note");
-                }
-            }
+            refreshArrayList();
         }
     }
 
@@ -70,23 +62,10 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         noteListView = (ListView) findViewById(R.id.noteListView);
         addNote = (Button) findViewById(R.id.addNote);
         final Button addNoteButton = (Button) findViewById(R.id.addNoteButton);
-        final RelativeLayout widgetNoteButton = (RelativeLayout) findViewById(R.id.widgetNoteButton);
         final EditText addNoteName = (EditText) findViewById(R.id.addNoteName);
         final EditText addNoteNote = (EditText) findViewById(R.id.addNoteNote);
         final Button deleteNote = (Button) findViewById(R.id.deleteNote);
         //noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
-
-        if(mydb.getCount() == 0)
-            mydb.addNote(0, "My First Note", "Click to edit My First Note");
-
-        // Load widget note name from database
-        TextView widgetNoteName = (TextView) findViewById(R.id.WidgeNoteName);
-        String widgetName = mydb.getNoteName(0);
-        if (widgetName != null && !widgetName.equals("NULL") && !widgetName.trim().isEmpty()) {
-            widgetNoteName.setText(widgetName.trim());
-        } else {
-            widgetNoteName.setText("My First Note");
-        }
 
         refreshArrayList();
 
@@ -131,15 +110,6 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                 noteIdForOptions = -1;
                 optionsLayout.setVisibility(View.GONE);
                 updateWidget();
-            }
-        });
-
-        widgetNoteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getBaseContext(), NoteView.class);
-                intent.putExtra("noteId", "0");
-                startActivity(intent);
             }
         });
     }
@@ -189,19 +159,33 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     }
 
     public void refreshArrayList(){
-        if(mydb.createNoteId() > 1) {
+        // Get all notes from database
+        if (mydb.getCount() > 0) {
             noNote.setVisibility(View.GONE);
             noteListView.setAdapter(null);
             noteIdList.clear();
             noteNameList.clear();
-            for (int i = 1; i < mydb.createNoteId(); i++) {
-                if (!mydb.getNoteName(i).trim().isEmpty() && (mydb.getNoteName(i).trim() != "NULL")) {
-                    noteIdList.add(i);
-                    noteNameList.add(mydb.getNoteName(i).trim());
+            
+            // Query database to get all note IDs
+            android.database.sqlite.SQLiteDatabase db = mydb.getReadableDatabase();
+            android.database.Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int noteId = cursor.getInt(0);
+                        String noteName = mydb.getNoteName(noteId);
+                        if (noteName != null) {
+                            noteName = noteName.trim();
+                            if (!noteName.isEmpty() && !noteName.equals("NULL")) {
+                                noteIdList.add(noteId);
+                                noteNameList.add(noteName);
+                            }
+                        }
+                    } while (cursor.moveToNext());
                 }
+                cursor.close();
             }
-        }
-        else {
+        } else {
             noNote.setVisibility(View.VISIBLE);
             noteListView.setAdapter(null);
             noteIdList.clear();
@@ -228,4 +212,5 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);
         sendBroadcast(intent);
     }
+
 }

@@ -89,11 +89,7 @@ public class NoteView extends AppCompatActivity {
         
         // Ensure name is not empty
         if (newNoteName.isEmpty()) {
-            if (noteId == 0) {
-                newNoteName = "My First Note";
-            } else {
-                newNoteName = originalNoteName;
-            }
+            newNoteName = originalNoteName;
             noteName.setText(newNoteName);
         }
         

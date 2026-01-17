@@ -23,18 +23,25 @@ public class WidgetManager extends AppWidgetProvider {
             DBHelper mydb = new DBHelper(ctxt);
             Intent svcIntent=new Intent(ctxt, WidgetService.class);
 
-            // Get the selected note ID for this widget, default to 0 if not set
+            // Get the selected note ID for this widget
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctxt);
-            int selectedNoteId = prefs.getInt("widget_note_" + appWidgetIds[i], 0);
+            int selectedNoteId = prefs.getInt("widget_note_" + appWidgetIds[i], -1);
             
-            // Check if the selected note still exists, if not fall back to note 0
-            String noteName = mydb.getNoteName(selectedNoteId);
-            if (noteName == null || noteName.equals("NULL") || noteName.trim().isEmpty()) {
-                selectedNoteId = 0;
-                // Update the preference to reflect the fallback
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putInt("widget_note_" + appWidgetIds[i], 0);
-                editor.apply();
+            // Get all note IDs from database
+            ArrayList<Integer> allNoteIds = getAllNoteIds(mydb);
+            
+            // Check if the selected note still exists, if not use first note from list
+            if (selectedNoteId == -1 || !allNoteIds.contains(selectedNoteId)) {
+                if (!allNoteIds.isEmpty()) {
+                    selectedNoteId = allNoteIds.get(0);
+                    // Update the preference to reflect the selection
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putInt("widget_note_" + appWidgetIds[i], selectedNoteId);
+                    editor.apply();
+                } else {
+                    // No notes available, skip this widget
+                    continue;
+                }
             }
             
             String noteText = mydb.getNote(selectedNoteId);
@@ -72,7 +79,21 @@ public class WidgetManager extends AppWidgetProvider {
             if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 DBHelper dbHelper = new DBHelper(context);
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-                int currentNoteId = prefs.getInt("widget_note_" + appWidgetId, 0);
+                int currentNoteId = prefs.getInt("widget_note_" + appWidgetId, -1);
+                
+                // If no note is set, get first note from list
+                if (currentNoteId == -1) {
+                    ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
+                    if (!noteIds.isEmpty()) {
+                        currentNoteId = noteIds.get(0);
+                        SharedPreferences.Editor editor = prefs.edit();
+                        editor.putInt("widget_note_" + appWidgetId, currentNoteId);
+                        editor.commit();
+                    } else {
+                        // No notes available, skip update
+                        return;
+                    }
+                }
                 
                 int newNoteId;
                 if (ACTION_PREV_NOTE.equals(intent.getAction())) {
@@ -81,14 +102,17 @@ public class WidgetManager extends AppWidgetProvider {
                     newNoteId = getNextNoteId(dbHelper, currentNoteId);
                 }
                 
-                // Save the new note ID (use commit() for synchronous write to ensure it's saved before widget update)
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putInt("widget_note_" + appWidgetId, newNoteId);
-                editor.commit();
-                
-                // Update the widget directly for faster response
-                AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-                updateWidgetDirectly(context, appWidgetManager, appWidgetId, newNoteId);
+                // Only update if we have a valid note ID
+                if (newNoteId != -1) {
+                    // Save the new note ID (use commit() for synchronous write to ensure it's saved before widget update)
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putInt("widget_note_" + appWidgetId, newNoteId);
+                    editor.commit();
+                    
+                    // Update the widget directly for faster response
+                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+                    updateWidgetDirectly(context, appWidgetManager, appWidgetId, newNoteId);
+                }
             }
         }
     }
@@ -126,6 +150,7 @@ public class WidgetManager extends AppWidgetProvider {
             
             setupWidget(context, appWidgetManager, appWidgetId, noteId, svcIntent);
         } catch (Exception e) {
+            Log.e("WidgetManager", "Error updating widget: " + e.getMessage());
             // If direct update fails, fall back to full update
             int[] appWidgetIds = {appWidgetId};
             onUpdate(context, appWidgetManager, appWidgetIds);
@@ -134,12 +159,14 @@ public class WidgetManager extends AppWidgetProvider {
 
     private void setupWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, int noteId, Intent svcIntent) {
         RemoteViews widget = new RemoteViews(context.getPackageName(), R.layout.widget_layout);
-        
+
+        Log.d("WidgetManager", "Setting up widget for noteId: " + noteId);
+
         // Get note data from database
         DBHelper dbHelper = new DBHelper(context);
         String noteName = dbHelper.getNoteName(noteId);
         if (noteName == null || noteName.equals("NULL") || noteName.trim().isEmpty()) {
-            noteName = "My First Note";
+            noteName = "";
         } else {
             noteName = noteName.trim();
         }
@@ -152,6 +179,8 @@ public class WidgetManager extends AppWidgetProvider {
         // Update the Intent with the latest note text to ensure consistency
         svcIntent.putExtra("text", noteText);
         svcIntent.putExtra("noteId", noteId);
+
+        Log.d("WidgetManager", "Setting up widget for noteId: " + noteName);
         
         // Set the note name in the widget header
         widget.setTextViewText(R.id.widgetNoteName, noteName);
@@ -198,7 +227,7 @@ public class WidgetManager extends AppWidgetProvider {
     private int getNextNoteId(DBHelper dbHelper, int currentNoteId) {
         ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
         if (noteIds.isEmpty()) {
-            return 0;
+            return -1;
         }
         
         int currentIndex = noteIds.indexOf(currentNoteId);
@@ -214,7 +243,7 @@ public class WidgetManager extends AppWidgetProvider {
     private int getPreviousNoteId(DBHelper dbHelper, int currentNoteId) {
         ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
         if (noteIds.isEmpty()) {
-            return 0;
+            return -1;
         }
         
         int currentIndex = noteIds.indexOf(currentNoteId);
@@ -230,19 +259,24 @@ public class WidgetManager extends AppWidgetProvider {
     private ArrayList<Integer> getAllNoteIds(DBHelper dbHelper) {
         ArrayList<Integer> noteIds = new ArrayList<Integer>();
         
-        // Always include note 0 (My First Note)
-        noteIds.add(0);
-        
-        // Add all other notes
-        if (dbHelper.createNoteId() > 1) {
-            for (int i = 1; i < dbHelper.createNoteId(); i++) {
-                String noteName = dbHelper.getNoteName(i);
-                if (noteName != null) {
-                    noteName = noteName.trim();
-                    if (!noteName.isEmpty() && !noteName.equals("NULL")) {
-                        noteIds.add(i);
-                    }
+        // Query database to get all note IDs that actually exist
+        if (dbHelper.getCount() > 0) {
+            android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
+            android.database.Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int noteId = cursor.getInt(0);
+                        String noteName = dbHelper.getNoteName(noteId);
+                        if (noteName != null) {
+                            noteName = noteName.trim();
+                            if (!noteName.isEmpty() && !noteName.equals("NULL")) {
+                                noteIds.add(noteId);
+                            }
+                        }
+                    } while (cursor.moveToNext());
                 }
+                cursor.close();
             }
         }
         

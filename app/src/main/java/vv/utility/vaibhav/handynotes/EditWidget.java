@@ -64,7 +64,7 @@ public class EditWidget extends Activity {
         update.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String noteName = noteId == 0 ? "My First Note" : mydb.getNoteName(noteId);
+                String noteName = mydb.getNoteName(noteId);
                 mydb.updateNote(noteId, noteName, widgetText.getText().toString().trim());
                 updateWidget();
                 finish();
