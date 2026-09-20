@@ -1,1 +1,19 @@
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+try {
+    def env = System.getenv()
+    def mapField = env.getClass().getDeclaredField("m")
+    mapField.setAccessible(true)
+    def map = mapField.get(env) as Map
+    map.remove("ANDROID_PREFS_ROOT")
+} catch (Throwable e) {
+    try {
+        def pe = Class.forName("java.lang.ProcessEnvironment")
+        def field = pe.getDeclaredField("theCaseInsensitiveEnvironment")
+        field.setAccessible(true)
+        (field.get(null) as Map).remove("ANDROID_PREFS_ROOT")
+    } catch (Throwable ignored) {}
+}
+
 include ':app'
