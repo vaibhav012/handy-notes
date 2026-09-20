@@ -4,6 +4,9 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
@@ -27,7 +30,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
     ListView noteListView;
     RelativeLayout optionsLayout;
-    TextView noNote;
+    View noNote;
     Button addNote;
     LinearLayout addNoteLayout;
 
@@ -57,7 +60,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         noteNameList = new ArrayList<String>();
 
         optionsLayout = (RelativeLayout) findViewById(R.id.optionsLayout);
-        noNote = (TextView) findViewById(R.id.noNote);
+        noNote = findViewById(R.id.noNote);
         addNoteLayout = (LinearLayout) findViewById(R.id.addNoteLayout);
         noteListView = (ListView) findViewById(R.id.noteListView);
         addNote = (Button) findViewById(R.id.addNote);
@@ -174,8 +177,8 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             noteNameList.clear();
             
             // Query database to get all note IDs
-            android.database.sqlite.SQLiteDatabase db = mydb.getReadableDatabase();
-            android.database.Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
+            SQLiteDatabase db = mydb.getReadableDatabase();
+            Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     do {

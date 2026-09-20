@@ -1,18 +1,16 @@
 package vv.utility.vaibhav.handynotes;
 
-import android.app.Activity;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RelativeLayout;
 
-public class EditWidget extends Activity {
+import androidx.appcompat.app.AppCompatActivity;
+
+public class EditWidget extends AppCompatActivity {
 
     private int noteId = 0;
     private int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
@@ -29,61 +27,53 @@ public class EditWidget extends Activity {
             appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
         }
 
-        Button cancel = (Button) findViewById(R.id.cancel);
-        Button update = (Button) findViewById(R.id.update);
-        Button openAppButton = (Button) findViewById(R.id.openAppButton);
-        final EditText widgetText = (EditText) findViewById(R.id.widgetText);
-        final DBHelper mydb = new DBHelper(this);
+        Button cancel = findViewById(R.id.cancel);
+        Button update = findViewById(R.id.update);
+        Button openAppButton = findViewById(R.id.openAppButton);
+        final EditText widgetText = findViewById(R.id.widgetText);
 
         // Load the note content
-        String noteContent = mydb.getNote(noteId);
-        widgetText.setText(noteContent);
-        
+        try (DBHelper mydb = new DBHelper(this)) {
+            String noteContent = mydb.getNote(noteId);
+            widgetText.setText(noteContent);
+        }
+
         // Auto-focus the EditText and show keyboard
         widgetText.requestFocus();
         widgetText.setSelection(widgetText.getText().length()); // Place cursor at end
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
-        openAppButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(EditWidget.this, Home.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                finish();
-            }
+        openAppButton.setOnClickListener(v -> {
+            Intent mainIntent = new Intent(EditWidget.this, Home.class);
+            mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(mainIntent);
+            finish();
         });
 
-        cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        cancel.setOnClickListener(v -> finish());
 
-        update.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        update.setOnClickListener(v -> {
+            try (DBHelper mydb = new DBHelper(EditWidget.this)) {
                 String noteName = mydb.getNoteName(noteId);
                 mydb.updateNote(noteId, noteName, widgetText.getText().toString().trim());
-                updateWidget();
-                finish();
             }
+            updateWidget();
+            finish();
         });
     }
 
-    public void updateWidget(){
+    public void updateWidget() {
         Intent intent = new Intent(getBaseContext(), WidgetManager.class);
         intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
-        
+
         // Update only the specific widget if we have its ID, otherwise update all
+        int[] ids;
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            int ids[] = {appWidgetId};
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+            ids = new int[]{appWidgetId};
         } else {
-            int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), WidgetManager.class));
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+            ids = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), WidgetManager.class));
         }
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
         sendBroadcast(intent);
     }
 }

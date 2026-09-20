@@ -1,92 +1,94 @@
 package vv.utility.vaibhav.handynotes;
 
-/**
- * Created by Vaibhav on 3/5/2016.
- */
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
-public class CustomAdapter extends BaseAdapter{
+public class CustomAdapter extends BaseAdapter {
 
     public interface TalkToActivity {
-        public void showOptions(int noteId);
+        void showOptions(int noteId);
     }
 
-    TalkToActivity talkToActivity;
+    private final TalkToActivity talkToActivity;
+    private final ArrayList<Integer> noteIdList;
+    private final ArrayList<String> noteNameList;
+    private final Context context;
+    private final LayoutInflater inflater;
 
-    ArrayList <Integer> noteIdList;
-    ArrayList <String> noteNameList;
-    Context context;
-    private static LayoutInflater inflater=null;
-    public CustomAdapter(Home mainActivity, ArrayList <Integer> noteIdL, ArrayList <String> noteNameL) {
-        // TODO Auto-generated constructor stub
-        noteIdList = noteIdL;
-        noteNameList = noteNameL;
-        context=mainActivity;
-        inflater = ( LayoutInflater )context.
-                getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        talkToActivity = (TalkToActivity) mainActivity;
+    public CustomAdapter(Home mainActivity, ArrayList<Integer> noteIdL, ArrayList<String> noteNameL) {
+        this.noteIdList = noteIdL;
+        this.noteNameList = noteNameL;
+        this.context = mainActivity;
+        this.inflater = LayoutInflater.from(context);
+        this.talkToActivity = (TalkToActivity) mainActivity;
     }
+
     @Override
     public int getCount() {
-        // TODO Auto-generated method stub
         return noteIdList.size();
     }
 
     @Override
     public Object getItem(int position) {
-        // TODO Auto-generated method stub
-        return position;
+        return noteIdList.get(position);
     }
 
     @Override
     public long getItemId(int position) {
-        // TODO Auto-generated method stub
         return position;
     }
 
-    public class Holder
-    {
+    private static class ViewHolder {
         TextView noteId;
         TextView noteName;
     }
+
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
-        // TODO Auto-generated method stub
-        Holder holder=new Holder();
-        View rowView;
-        rowView = inflater.inflate(R.layout.one_note_layout, null);
-        holder.noteId=(TextView) rowView.findViewById(R.id.noteId);
-        holder.noteName=(TextView) rowView.findViewById(R.id.noteName);
-        holder.noteId.setText(noteIdList.get(position).toString());
-        holder.noteName.setText(noteNameList.get(position).toString());
-        rowView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // TODO Auto-generated method stub
-                Intent intent = new Intent(context, NoteView.class);
-                intent.putExtra("noteId", noteIdList.get(position).toString());
-                context.startActivity(intent);
-            }
-        });
-        rowView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                //Toast.makeText(context, "You Clicked " + noteIdList.get(position).toString(), Toast.LENGTH_LONG).show();
-                talkToActivity.showOptions(noteIdList.get(position));
-                return true;
-            }
-        });
-        return rowView;
+        ViewHolder holder;
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.one_note_layout, parent, false);
+            holder = new ViewHolder();
+            holder.noteId = convertView.findViewById(R.id.noteId);
+            holder.noteName = convertView.findViewById(R.id.noteName);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        final int currentNoteId = noteIdList.get(position);
+        final String currentNoteName = noteNameList.get(position);
+
+        holder.noteId.setText(String.valueOf(currentNoteId));
+        holder.noteName.setText(currentNoteName);
+
+        View noteButton = convertView.findViewById(R.id.noteButton);
+        if (noteButton != null) {
+            noteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(context, NoteView.class);
+                    intent.putExtra("noteId", String.valueOf(currentNoteId));
+                    context.startActivity(intent);
+                }
+            });
+
+            noteButton.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    talkToActivity.showOptions(currentNoteId);
+                    return true;
+                }
+            });
+        }
+
+        return convertView;
     }
 }

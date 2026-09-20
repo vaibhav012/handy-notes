@@ -1,23 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#9A86D0</color>
-    <color name="colorPrimaryDark">#7C6BA0</color>
-    <color name="colorAccent">#FF6B9D</color>
+    <color name="colorPrimary">#C4B5FD</color>
+    <color name="colorPrimaryDark">#9F86EC</color>
+    <color name="colorAccent">#A78BFA</color>
     <color name="transparent">#00000000</color>
-    
-    <!-- Modern Material Design 3 Colors - Dark Mode -->
-    <color name="surface">#1C1B1F</color>
-    <color name="surface_variant">#2B2930</color>
-    <color name="primary">#D0BCFF</color>
-    <color name="on_primary">#381E72</color>
+
+    <!-- Material Design 3 Palette - Dark Mode -->
+    <color name="primary">#C4B5FD</color>
+    <color name="on_primary">#2E1E6B</color>
     <color name="secondary">#CCC2DC</color>
     <color name="on_secondary">#332D41</color>
     <color name="tertiary">#EFB8C8</color>
-    <color name="outline">#938F99</color>
-    <color name="outline_variant">#49454F</color>
-    <color name="background">#1C1B1F</color>
+    <color name="background">#121318</color>
     <color name="on_background">#E6E1E5</color>
+    <color name="surface">#1E1F26</color>
+    <color name="on_surface">#E6E1E5</color>
+    <color name="surface_variant">#282A34</color>
+    <color name="on_surface_variant">#CAC4D0</color>
+    <color name="outline">#938F99</color>
+    <color name="outline_variant">#363844</color>
+    <color name="card_background">#1E1F26</color>
     <color name="error">#F2B8B5</color>
     <color name="on_error">#601410</color>
-</resources>
+    <color name="delete_red">#EF5350</color>
 
+    <!-- App Header / App Bar Colors - Dark Mode -->
+    <color name="header_background">#1E1F26</color>
+    <color name="header_title">#E6E1E5</color>
+
+    <!-- Widget Specific Colors - Dark Mode -->
+    <color name="widget_header_background">#312B4C</color>
+    <color name="widget_header_text">#D0BCFF</color>
+    <color name="widget_body_background">#1E1F26</color>
+</resources>

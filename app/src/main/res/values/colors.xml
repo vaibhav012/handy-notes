@@ -1,22 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorPrimary">#5C4EB4</color>
+    <color name="colorPrimaryDark">#463897</color>
+    <color name="colorAccent">#7C69EF</color>
     <color name="transparent">#00000000</color>
-    
-    <!-- Modern Material Design 3 Colors -->
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F5F5F5</color>
-    <color name="primary">#6750A4</color>
+
+    <!-- Material Design 3 Palette - Light Mode -->
+    <color name="primary">#5C4EB4</color>
     <color name="on_primary">#FFFFFF</color>
     <color name="secondary">#625B71</color>
     <color name="on_secondary">#FFFFFF</color>
     <color name="tertiary">#7D5260</color>
+    <color name="background">#F8F9FE</color>
+    <color name="on_background">#1C1B20</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#1C1B20</color>
+    <color name="surface_variant">#F0F2FA</color>
+    <color name="on_surface_variant">#47454F</color>
     <color name="outline">#79747E</color>
-    <color name="outline_variant">#CAC4D0</color>
-    <color name="background">#FFFBFE</color>
-    <color name="on_background">#1C1B1F</color>
+    <color name="outline_variant">#E2E5F0</color>
+    <color name="card_background">#FFFFFF</color>
     <color name="error">#BA1A1A</color>
     <color name="on_error">#FFFFFF</color>
+    <color name="delete_red">#E53935</color>
+
+    <!-- App Header / App Bar Colors -->
+    <color name="header_background">#5C4EB4</color>
+    <color name="header_title">#FFFFFF</color>
+
+    <!-- Widget Specific Colors - Light Mode -->
+    <color name="widget_header_background">#5C4EB4</color>
+    <color name="widget_header_text">#FFFFFF</color>
+    <color name="widget_body_background">#FFFFFF</color>
 </resources>

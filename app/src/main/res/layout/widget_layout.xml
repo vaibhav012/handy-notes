@@ -1,68 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fullLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/fullLayout"
+    android:background="@drawable/widget_bg"
     android:clickable="true"
     android:contextClickable="true">
 
-    <ListView
-        android:id="@+id/widgetListView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#6062c7"
-        android:layout_below="@+id/linearLayout" />
-
     <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
         android:id="@+id/linearLayout"
-        android:background="#4052b5"
-        android:gravity="center_vertical">
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/widget_header_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
         
         <ImageButton
             android:id="@+id/prevNoteButton"
-            android:layout_width="0dp"
+            android:layout_width="32dp"
             android:layout_height="28dp"
-            android:layout_weight="1"
-            android:src="@drawable/ic_arrow_left"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Previous Note"
+            android:padding="2dp"
             android:scaleType="fitCenter"
-            android:padding="2dp" />
+            android:src="@drawable/ic_arrow_left"
+            app:tint="@color/widget_header_text" />
         
         <TextView
             android:id="@+id/widgetNoteName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:text="My First Note"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
+            android:layout_weight="1"
+            android:ellipsize="marquee"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:gravity="center"
+            android:marqueeRepeatLimit="marquee_forever"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:ellipsize="marquee"
-            android:marqueeRepeatLimit="marquee_forever"
             android:singleLine="true"
-            android:focusable="true"
-            android:focusableInTouchMode="true" />
+            android:text="Handy Notes"
+            android:textColor="@color/widget_header_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
         
         <ImageButton
             android:id="@+id/nextNoteButton"
-            android:layout_width="0dp"
+            android:layout_width="32dp"
             android:layout_height="28dp"
-            android:layout_weight="1"
-            android:src="@drawable/ic_arrow_right"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Next Note"
+            android:padding="2dp"
             android:scaleType="fitCenter"
-            android:padding="2dp" />
+            android:src="@drawable/ic_arrow_right"
+            app:tint="@color/widget_header_text" />
     </LinearLayout>
+
+    <ListView
+        android:id="@+id/widgetListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/linearLayout"
+        android:background="@android:color/transparent"
+        android:divider="@null"
+        android:dividerHeight="0dp" />
 
 </RelativeLayout>
