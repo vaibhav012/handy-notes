@@ -29,13 +29,40 @@
         android:paddingTop="12dp"
         android:paddingBottom="8dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/dateAndTime"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Last Modified: Just now"
+                android:textColor="@color/outline"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/onlineSyncSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Online "
+                android:textSize="12sp"
+                android:textColor="@color/on_background" />
+
+        </LinearLayout>
+
         <TextView
-            android:id="@+id/dateAndTime"
+            android:id="@+id/syncStatusText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Last Modified: Just now"
+            android:text=""
             android:textColor="@color/outline"
-            android:textSize="12sp"
+            android:textSize="11sp"
+            android:visibility="gone"
             android:layout_marginBottom="8dp" />
 
         <TextView

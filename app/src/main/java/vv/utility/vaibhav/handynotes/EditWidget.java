@@ -20,7 +20,6 @@ public class EditWidget extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_widget);
 
-        // Get note ID and widget ID from intent
         Intent intent = getIntent();
         if (intent != null) {
             noteId = intent.getIntExtra("noteId", 0);
@@ -32,31 +31,76 @@ public class EditWidget extends AppCompatActivity {
         Button openAppButton = findViewById(R.id.openAppButton);
         final EditText widgetText = findViewById(R.id.widgetText);
 
-        // Load the note content
         try (DBHelper mydb = new DBHelper(this)) {
             String noteContent = mydb.getNote(noteId);
             widgetText.setText(noteContent);
+
+            // Refetch in background if note is online
+            if (mydb.isNoteOnline(noteId)) {
+                String onlineId = mydb.getOnlineId(noteId);
+                if (!onlineId.isEmpty()) {
+                    ApiService.fetchOnlineNote(this, onlineId, new ApiService.ApiCallback<ApiService.NoteSyncResult>() {
+                        @Override
+                        public void onSuccess(ApiService.NoteSyncResult result) {
+                            if (result.content != null && !result.content.isEmpty()) {
+                                try (DBHelper db = new DBHelper(EditWidget.this)) {
+                                    String title = result.title != null && !result.title.isEmpty() ? result.title : db.getNoteName(noteId);
+                                    db.updateNote(noteId, title, result.content);
+                                }
+                                widgetText.setText(result.content);
+                                updateWidget();
+                            }
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            // Keep offline content if fetch fails
+                        }
+                    });
+                }
+            }
         }
 
-        // Auto-focus the EditText and show keyboard
         widgetText.requestFocus();
-        widgetText.setSelection(widgetText.getText().length()); // Place cursor at end
+        widgetText.setSelection(widgetText.getText().length());
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
         openAppButton.setOnClickListener(v -> {
-            Intent mainIntent = new Intent(EditWidget.this, Home.class);
-            mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(mainIntent);
+            Intent noteIntent = new Intent(EditWidget.this, NoteView.class);
+            noteIntent.putExtra("noteId", String.valueOf(noteId));
+            startActivity(noteIntent);
             finish();
         });
 
         cancel.setOnClickListener(v -> finish());
 
         update.setOnClickListener(v -> {
+            String newText = widgetText.getText().toString().trim();
+            String noteName = "";
+            boolean isOnline = false;
+            String onlineId = "";
+
             try (DBHelper mydb = new DBHelper(EditWidget.this)) {
-                String noteName = mydb.getNoteName(noteId);
-                mydb.updateNote(noteId, noteName, widgetText.getText().toString().trim());
+                noteName = mydb.getNoteName(noteId);
+                mydb.updateNote(noteId, noteName, newText);
+                isOnline = mydb.isNoteOnline(noteId);
+                onlineId = mydb.getOnlineId(noteId);
             }
+
+            if (isOnline && !onlineId.isEmpty()) {
+                ApiService.updateOnlineNote(EditWidget.this, onlineId, noteName, newText, new ApiService.ApiCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean result) {
+                        // Synced with backend
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        // Offline save
+                    }
+                });
+            }
+
             updateWidget();
             finish();
         });
@@ -66,7 +110,6 @@ public class EditWidget extends AppCompatActivity {
         Intent intent = new Intent(getBaseContext(), WidgetManager.class);
         intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
 
-        // Update only the specific widget if we have its ID, otherwise update all
         int[] ids;
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             ids = new int[]{appWidgetId};

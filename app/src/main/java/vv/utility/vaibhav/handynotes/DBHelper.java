@@ -9,7 +9,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,22 +22,41 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String NOTE_NAME = "noteName";
     public static final String NOTE = "note";
     public static final String DATE_TIME_COLUMN = "dateTime";
+    public static final String IS_ONLINE_COLUMN = "isOnline";
+    public static final String ONLINE_ID_COLUMN = "onlineId";
 
     public DBHelper(Context context) {
-        super(context, DATABASE_NAME, null, 1);
+        super(context, DATABASE_NAME, null, 2);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("create table " + NOTES_TABLE_NAME + "( " + NOTE_ID + " INTEGER PRIMARY KEY, " + NOTE_NAME + " TEXT, " + NOTE + " TEXT, " + DATE_TIME_COLUMN + " TEXT );");
+        db.execSQL("create table " + NOTES_TABLE_NAME + "( " 
+                + NOTE_ID + " INTEGER PRIMARY KEY, " 
+                + NOTE_NAME + " TEXT, " 
+                + NOTE + " TEXT, " 
+                + DATE_TIME_COLUMN + " TEXT, "
+                + IS_ONLINE_COLUMN + " INTEGER DEFAULT 0, "
+                + ONLINE_ID_COLUMN + " TEXT );");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + NOTES_TABLE_NAME);
+        if (oldVersion < 2) {
+            try {
+                db.execSQL("ALTER TABLE " + NOTES_TABLE_NAME + " ADD COLUMN " + IS_ONLINE_COLUMN + " INTEGER DEFAULT 0;");
+                db.execSQL("ALTER TABLE " + NOTES_TABLE_NAME + " ADD COLUMN " + ONLINE_ID_COLUMN + " TEXT;");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void addNote(int noteId, String name, String note) {
+        addNote(noteId, name, note, false, "");
+    }
+
+    public void addNote(int noteId, String name, String note, boolean isOnline, String onlineId) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         Calendar calendar = Calendar.getInstance();
@@ -50,6 +68,8 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(NOTE_NAME, name);
         values.put(NOTE, note);
         values.put(DATE_TIME_COLUMN, dateAndTime);
+        values.put(IS_ONLINE_COLUMN, isOnline ? 1 : 0);
+        values.put(ONLINE_ID_COLUMN, onlineId != null ? onlineId : "");
         db.insert(NOTES_TABLE_NAME, null, values);
         db.close();
     }
@@ -61,10 +81,14 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if (getCount() > 0){
             Cursor cursor = db.rawQuery("SELECT * from notes WHERE 1", null);
-            cursor.moveToFirst();
-            do{
-                noteId = cursor.getInt(0);
-            } while (cursor.moveToNext());
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        noteId = cursor.getInt(0);
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
         }
         noteId++;
         return noteId;
@@ -77,11 +101,15 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if (getCount() > 0){
             Cursor cursor = db.rawQuery("SELECT * from notes WHERE 1", null);
-            cursor.moveToFirst();
-            do{
-                if(cursor.getInt(0) == note_id)
-                    noteName = cursor.getString(1);
-            } while (cursor.moveToNext());
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        if(cursor.getInt(0) == note_id)
+                            noteName = cursor.getString(1);
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
         }
         return noteName;
     }
@@ -93,11 +121,15 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if (getCount() > 0){
             Cursor cursor = db.rawQuery("SELECT * from notes WHERE 1", null);
-            cursor.moveToFirst();
-            do{
-                if(cursor.getInt(0) == note_id)
-                    note = cursor.getString(2);
-            } while (cursor.moveToNext());
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        if(cursor.getInt(0) == note_id)
+                            note = cursor.getString(2);
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
         }
         return note;
     }
@@ -109,28 +141,110 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if (getCount() > 0){
             Cursor cursor = db.rawQuery("SELECT * from notes WHERE 1", null);
-            cursor.moveToFirst();
-            do{
-                if(cursor.getInt(0) == note_id)
-                    dateTime = cursor.getString(3);
-            } while (cursor.moveToNext());
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        if(cursor.getInt(0) == note_id)
+                            dateTime = cursor.getString(3);
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
         }
         return dateTime;
     }
 
-    void deleteNote(int noteId){
+    public boolean isNoteOnline(int note_id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        boolean isOnline = false;
+
+        try (Cursor cursor = db.rawQuery("SELECT " + IS_ONLINE_COLUMN + " FROM " + NOTES_TABLE_NAME + " WHERE " + NOTE_ID + " = ?", new String[]{String.valueOf(note_id)})) {
+            if (cursor != null && cursor.moveToFirst()) {
+                isOnline = cursor.getInt(0) == 1;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return isOnline;
+    }
+
+    public String getOnlineId(int note_id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String onlineId = "";
+
+        try (Cursor cursor = db.rawQuery("SELECT " + ONLINE_ID_COLUMN + " FROM " + NOTES_TABLE_NAME + " WHERE " + NOTE_ID + " = ?", new String[]{String.valueOf(note_id)})) {
+            if (cursor != null && cursor.moveToFirst()) {
+                onlineId = cursor.getString(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return onlineId != null ? onlineId : "";
+    }
+
+    public void setOnlineStatus(int noteId, boolean isOnline, String onlineId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(IS_ONLINE_COLUMN, isOnline ? 1 : 0);
+        if (onlineId != null) {
+            values.put(ONLINE_ID_COLUMN, onlineId);
+        }
+        db.update(NOTES_TABLE_NAME, values, NOTE_ID + " = " + noteId, null);
+    }
+
+    /** Add a fetched server note once, or refresh the local copy already linked to its server UUID. */
+    public void upsertOnlineNote(String onlineId, String name, String note) {
+        if (onlineId == null || onlineId.trim().isEmpty()) return;
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.beginTransaction();
+            int localId = -1;
+            try (Cursor cursor = db.query(NOTES_TABLE_NAME, new String[]{NOTE_ID},
+                    ONLINE_ID_COLUMN + " = ?", new String[]{onlineId}, null, null, null, "1")) {
+                if (cursor.moveToFirst()) localId = cursor.getInt(0);
+            }
+
+            Calendar calendar = Calendar.getInstance();
+            String dateAndTime = "Date : " + calendar.get(Calendar.DATE) + "/" + calendar.get(Calendar.MONTH) + "/" + calendar.get(Calendar.YEAR)
+                    + "  Time : " + calendar.get(Calendar.HOUR_OF_DAY) + "." + calendar.get(Calendar.MINUTE) + "." + calendar.get(Calendar.SECOND);
+            ContentValues values = new ContentValues();
+            values.put(NOTE_NAME, name == null ? "Untitled Note" : name);
+            values.put(NOTE, note == null ? "" : note);
+            values.put(DATE_TIME_COLUMN, dateAndTime);
+            values.put(IS_ONLINE_COLUMN, 1);
+            values.put(ONLINE_ID_COLUMN, onlineId);
+
+            if (localId >= 0) {
+                db.update(NOTES_TABLE_NAME, values, NOTE_ID + " = ?", new String[]{String.valueOf(localId)});
+            } else {
+                try (Cursor cursor = db.rawQuery("SELECT COALESCE(MAX(" + NOTE_ID + "), 0) + 1 FROM " + NOTES_TABLE_NAME, null)) {
+                    localId = cursor.moveToFirst() ? cursor.getInt(0) : 1;
+                }
+                values.put(NOTE_ID, localId);
+                db.insertOrThrow(NOTES_TABLE_NAME, null, values);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
+    public void deleteNote(int noteId){
         SQLiteDatabase db = this.getReadableDatabase();
         for(int i = noteId; i < createNoteId() - 1; i++){
             ContentValues values = new ContentValues();
             values.put(NOTE_NAME, getNoteName(i + 1));
             values.put(NOTE, getNote(i + 1));
             values.put(DATE_TIME_COLUMN, getDateTime(i + 1));
-            db.update("notes", values, "noteId = " + i, null);
+            values.put(IS_ONLINE_COLUMN, isNoteOnline(i + 1) ? 1 : 0);
+            values.put(ONLINE_ID_COLUMN, getOnlineId(i + 1));
+            db.update(NOTES_TABLE_NAME, values, "noteId = " + i, null);
         }
-        db.delete("notes", "noteId = " + (createNoteId() - 1), null);
+        db.delete(NOTES_TABLE_NAME, "noteId = " + (createNoteId() - 1), null);
     }
 
-    void updateNote(int noteId, String noteName, String note){
+    public void updateNote(int noteId, String noteName, String note){
         SQLiteDatabase db = this.getReadableDatabase();
 
         Calendar calendar = Calendar.getInstance();
@@ -141,13 +255,14 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(NOTE_NAME, noteName);
         values.put(NOTE, note);
         values.put(DATE_TIME_COLUMN, dateAndTime);
-        db.update("notes", values, "noteId = " + noteId, null);
+        db.update(NOTES_TABLE_NAME, values, "noteId = " + noteId, null);
     }
 
     public int getCount(){
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT  * FROM " + NOTES_TABLE_NAME, null);
-        return cursor.getCount();
+        try (Cursor cursor = db.rawQuery("SELECT * FROM " + NOTES_TABLE_NAME, null)) {
+            return cursor != null ? cursor.getCount() : 0;
+        }
     }
 
     // Get all notes as a list of Note objects for export
@@ -164,9 +279,11 @@ public class DBHelper extends SQLiteOpenHelper {
                         String noteName = cursor.getString(1);
                         String note = cursor.getString(2);
                         String dateTime = cursor.getString(3);
+                        boolean isOnline = cursor.getColumnCount() > 4 && cursor.getInt(4) == 1;
+                        String onlineId = cursor.getColumnCount() > 5 ? cursor.getString(5) : "";
                         
                         if (noteName != null && !noteName.trim().isEmpty() && !noteName.equals("NULL")) {
-                            notes.add(new Note(noteId, noteName, note, dateTime));
+                            notes.add(new Note(noteId, noteName, note, dateTime, isOnline, onlineId));
                         }
                     } while (cursor.moveToNext());
                 }
@@ -187,6 +304,8 @@ public class DBHelper extends SQLiteOpenHelper {
             values.put(NOTE_NAME, note.getNoteName());
             values.put(NOTE, note.getNote());
             values.put(DATE_TIME_COLUMN, note.getDateTime());
+            values.put(IS_ONLINE_COLUMN, note.isOnline() ? 1 : 0);
+            values.put(ONLINE_ID_COLUMN, note.getOnlineId());
             db.insert(NOTES_TABLE_NAME, null, values);
         }
         
@@ -200,23 +319,33 @@ public class DBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    // Note data class for export/import
+    // Note data class
     public static class Note {
         private int noteId;
         private String noteName;
         private String note;
         private String dateTime;
+        private boolean isOnline;
+        private String onlineId;
 
         public Note(int noteId, String noteName, String note, String dateTime) {
+            this(noteId, noteName, note, dateTime, false, "");
+        }
+
+        public Note(int noteId, String noteName, String note, String dateTime, boolean isOnline, String onlineId) {
             this.noteId = noteId;
             this.noteName = noteName;
             this.note = note;
             this.dateTime = dateTime;
+            this.isOnline = isOnline;
+            this.onlineId = onlineId != null ? onlineId : "";
         }
 
         public int getNoteId() { return noteId; }
         public String getNoteName() { return noteName; }
         public String getNote() { return note; }
         public String getDateTime() { return dateTime; }
+        public boolean isOnline() { return isOnline; }
+        public String getOnlineId() { return onlineId; }
     }
 }

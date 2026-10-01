@@ -46,6 +46,15 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <ImageView
+            android:id="@+id/onlineCloudBadge"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_cloud_upload_black_48dp"
+            android:contentDescription="Online Sync"
+            android:visibility="gone"
+            android:layout_marginStart="8dp" />
+
     </LinearLayout>
 
 </LinearLayout>

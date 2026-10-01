@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class CustomAdapter extends BaseAdapter {
     private static class ViewHolder {
         TextView noteId;
         TextView noteName;
+        ImageView onlineCloudBadge;
     }
 
     @Override
@@ -58,6 +60,7 @@ public class CustomAdapter extends BaseAdapter {
             holder = new ViewHolder();
             holder.noteId = convertView.findViewById(R.id.noteId);
             holder.noteName = convertView.findViewById(R.id.noteName);
+            holder.onlineCloudBadge = convertView.findViewById(R.id.onlineCloudBadge);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
@@ -69,23 +72,24 @@ public class CustomAdapter extends BaseAdapter {
         holder.noteId.setText(String.valueOf(currentNoteId));
         holder.noteName.setText(currentNoteName);
 
+        try (DBHelper dbHelper = new DBHelper(context)) {
+            boolean isOnline = dbHelper.isNoteOnline(currentNoteId);
+            if (holder.onlineCloudBadge != null) {
+                holder.onlineCloudBadge.setVisibility(isOnline ? View.VISIBLE : View.GONE);
+            }
+        }
+
         View noteButton = convertView.findViewById(R.id.noteButton);
         if (noteButton != null) {
-            noteButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(context, NoteView.class);
-                    intent.putExtra("noteId", String.valueOf(currentNoteId));
-                    context.startActivity(intent);
-                }
+            noteButton.setOnClickListener(v -> {
+                Intent intent = new Intent(context, NoteView.class);
+                intent.putExtra("noteId", String.valueOf(currentNoteId));
+                context.startActivity(intent);
             });
 
-            noteButton.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    talkToActivity.showOptions(currentNoteId);
-                    return true;
-                }
+            noteButton.setOnLongClickListener(v -> {
+                talkToActivity.showOptions(currentNoteId);
+                return true;
             });
         }
 

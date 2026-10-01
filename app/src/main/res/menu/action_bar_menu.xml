@@ -2,26 +2,20 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!--
     <item
-        android:id="@+id/action_add_note"
-        android:title="@string/add_note"
-        android:icon="@drawable/ic_add_black_48dp"
-        app:showAsAction="ifRoom"/>
-
-    <item android:id="@+id/action_account"
+        android:id="@+id/action_account"
         android:title="@string/account"
         android:icon="@drawable/ic_account_box_black_48dp"
         app:showAsAction="ifRoom"/>
 
-    <item android:id="@+id/action_about_us"
-        android:title="@string/about_us"
-        app:showAsAction="never"/>
-    -->
-
     <item
         android:id="@+id/action_export_import"
         android:title="@string/export_import"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_server_settings"
+        android:title="@string/server_settings"
         app:showAsAction="never"/>
 
 </menu>

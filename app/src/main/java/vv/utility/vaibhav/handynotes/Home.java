@@ -43,6 +43,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         // Refresh the note list when returning to activity
         if (mydb != null) {
             refreshArrayList();
+            syncServerNotes();
         }
     }
 
@@ -108,6 +109,21 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         deleteNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                final boolean wasOnline = mydb.isNoteOnline(noteIdForOptions);
+                final String onlineId = mydb.getOnlineId(noteIdForOptions);
+                if (wasOnline && !onlineId.isEmpty()) {
+                    ApiService.deleteOnlineNote(Home.this, onlineId, new ApiService.ApiCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean deleted) { }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            Toast.makeText(Home.this,
+                                    "Deleted locally, but the server copy could not be deleted: " + errorMessage,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
                 mydb.deleteNote(noteIdForOptions);
                 refreshArrayList();
                 noteIdForOptions = -1;
@@ -149,21 +165,15 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             return true;
         }
 
-//        if (id == R.id.action_add_note) {
-//            showAddNoteLayout();
-//            return true;
-//        }
-//
-//        if (id == R.id.action_account) {
-//            Intent intent = new Intent(getBaseContext(),AccountActivity.class);
-//            startActivity(intent);
-//            return true;
-//        }
-//
-//        if (id == R.id.action_about_us) {
-//            Toast.makeText(getBaseContext(),"Robogenia",Toast.LENGTH_SHORT).show();
-//            return true;
-//        }
+        if (id == R.id.action_server_settings) {
+            ServerSettingsDialog.show(this);
+            return true;
+        }
+
+        if (id == R.id.action_account) {
+            AccountDialog.show(this, this::syncServerNotes);
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -202,6 +212,40 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             noteNameList.clear();
         }
         noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
+    }
+
+    private void syncServerNotes() {
+        if (!ApiConfig.isSupabaseConfigured(this)) return;
+        SupabaseAuthManager.getSignedInEmail(this, new SupabaseAuthManager.Callback() {
+            @Override
+            public void onSuccess(String email) {
+                if (email == null || email.isEmpty() || isFinishing()) return;
+                ApiService.fetchOnlineNotes(Home.this, new ApiService.ApiCallback<java.util.List<ApiService.ServerNote>>() {
+                    @Override
+                    public void onSuccess(java.util.List<ApiService.ServerNote> notes) {
+                        try (DBHelper db = new DBHelper(Home.this)) {
+                            for (ApiService.ServerNote note : notes) {
+                                db.upsertOnlineNote(note.onlineId, note.title, note.content);
+                            }
+                        }
+                        refreshArrayList();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        if (!errorMessage.contains("Sign in to your Supabase account") && !isFinishing()) {
+                            Toast.makeText(Home.this, "Could not refresh server notes: " + errorMessage,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                // Local notes remain available while Supabase is unreachable.
+            }
+        });
     }
 
     public void showAddNoteLayout(){
