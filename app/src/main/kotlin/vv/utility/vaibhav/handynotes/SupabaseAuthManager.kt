@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.SessionManager
@@ -28,6 +29,7 @@ import android.util.Base64
 
 /** Small Java-callable adapter around supabase-kt's coroutine based Auth SDK. */
 object SupabaseAuthManager {
+    private const val TAG = "SupabaseAuthManager"
     interface Callback {
         fun onSuccess(value: String?)
         fun onError(message: String)
@@ -71,6 +73,7 @@ object SupabaseAuthManager {
                 val signedInEmail = authClient.auth.currentSessionOrNull()?.user?.email
                 mainHandler.post { callback.onSuccess(signedInEmail) }
             } catch (error: Exception) {
+                logAuthFailure("Sign-in", error)
                 mainHandler.post { callback.onError(error.message ?: "Supabase sign-in failed") }
             }
         }
@@ -88,6 +91,7 @@ object SupabaseAuthManager {
                 val signedInEmail = authClient.auth.currentSessionOrNull()?.user?.email ?: email
                 mainHandler.post { callback.onSuccess(signedInEmail) }
             } catch (error: Exception) {
+                logAuthFailure("Sign-up", error)
                 mainHandler.post { callback.onError(error.message ?: "Supabase sign-up failed") }
             }
         }
@@ -100,6 +104,7 @@ object SupabaseAuthManager {
                 getClient(context).auth.signOut()
                 mainHandler.post { callback.onSuccess(null) }
             } catch (error: Exception) {
+                logAuthFailure("Sign-out", error)
                 mainHandler.post { callback.onError(error.message ?: "Supabase sign-out failed") }
             }
         }
@@ -123,15 +128,30 @@ object SupabaseAuthManager {
     fun getAccessTokenBlocking(context: Context): String? = runBlocking(Dispatchers.IO) {
         val authClient = getClient(context)
         authClient.auth.sessionStatus.first { it !is io.github.jan.supabase.auth.status.SessionStatus.Initializing }
-        authClient.auth.currentSessionOrNull()?.accessToken
+        val token = authClient.auth.currentSessionOrNull()?.accessToken
+        Log.d(TAG, "Access token available: ${!token.isNullOrBlank()}")
+        token
     }
 
     /** Refresh explicitly after an API 401, then return the SDK-managed new token. */
     @JvmStatic
     fun refreshAccessTokenBlocking(context: Context): String? = runBlocking(Dispatchers.IO) {
         val authClient = getClient(context)
-        authClient.auth.refreshCurrentSession()
-        authClient.auth.currentSessionOrNull()?.accessToken
+        Log.i(TAG, "Refreshing Supabase session")
+        try {
+            authClient.auth.refreshCurrentSession()
+            val token = authClient.auth.currentSessionOrNull()?.accessToken
+            Log.i(TAG, "Supabase session refresh complete; access token available: ${!token.isNullOrBlank()}")
+            token
+        } catch (error: Exception) {
+            logAuthFailure("Session refresh", error)
+            throw error
+        }
+    }
+
+    private fun logAuthFailure(operation: String, error: Exception) {
+        val detail = error.message
+        Log.e(TAG, "$operation failed (${error.javaClass.simpleName})${if (detail.isNullOrBlank()) "" else ": $detail"}")
     }
 
     /** Avoid reusing a stored session after changing to a different Supabase project. */

@@ -11,7 +11,6 @@
     <string name="export_import">Export/Import</string>
     <string name="export_notes">Export Notes</string>
     <string name="import_notes">Import Notes</string>
-    <string name="server_settings">Server Settings</string>
     <string name="online_sync">Online Sync</string>
     <string name="supabase_account">Supabase Account</string>
 </resources>

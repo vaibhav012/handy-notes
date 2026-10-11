@@ -36,6 +36,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
     ArrayList<Integer> noteIdList;
     ArrayList<String> noteNameList;
+    ArrayList<String> notePreviewList;
 
     @Override
     protected void onResume() {
@@ -59,6 +60,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
         noteIdList = new ArrayList<Integer>();
         noteNameList = new ArrayList<String>();
+        notePreviewList = new ArrayList<String>();
 
         optionsLayout = (RelativeLayout) findViewById(R.id.optionsLayout);
         noNote = findViewById(R.id.noNote);
@@ -165,11 +167,6 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             return true;
         }
 
-        if (id == R.id.action_server_settings) {
-            ServerSettingsDialog.show(this);
-            return true;
-        }
-
         if (id == R.id.action_account) {
             AccountDialog.show(this, this::syncServerNotes);
             return true;
@@ -185,20 +182,24 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             noteListView.setAdapter(null);
             noteIdList.clear();
             noteNameList.clear();
+            notePreviewList.clear();
             
             // Query database to get all note IDs
             SQLiteDatabase db = mydb.getReadableDatabase();
-            Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
+            Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + ", " + DBHelper.NOTE_NAME + ", "
+                    + DBHelper.NOTE + " FROM " + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null);
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     do {
                         int noteId = cursor.getInt(0);
-                        String noteName = mydb.getNoteName(noteId);
+                        String noteName = cursor.getString(1);
                         if (noteName != null) {
                             noteName = noteName.trim();
                             if (!noteName.isEmpty() && !noteName.equals("NULL")) {
                                 noteIdList.add(noteId);
                                 noteNameList.add(noteName);
+                                String noteContent = cursor.getString(2);
+                                notePreviewList.add(noteContent == null ? "" : noteContent.trim().replaceAll("\\s+", " "));
                             }
                         }
                     } while (cursor.moveToNext());
@@ -210,8 +211,9 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             noteListView.setAdapter(null);
             noteIdList.clear();
             noteNameList.clear();
+            notePreviewList.clear();
         }
-        noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
+        noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList, notePreviewList));
     }
 
     private void syncServerNotes() {
@@ -223,12 +225,18 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                 ApiService.fetchOnlineNotes(Home.this, new ApiService.ApiCallback<java.util.List<ApiService.ServerNote>>() {
                     @Override
                     public void onSuccess(java.util.List<ApiService.ServerNote> notes) {
+                        java.util.ArrayList<String> serverOnlineIds = new java.util.ArrayList<>();
                         try (DBHelper db = new DBHelper(Home.this)) {
                             for (ApiService.ServerNote note : notes) {
                                 db.upsertOnlineNote(note.onlineId, note.title, note.content);
+                                if (note.onlineId != null && !note.onlineId.trim().isEmpty()) {
+                                    serverOnlineIds.add(note.onlineId);
+                                }
                             }
+                            db.deleteOnlineNotesMissingFrom(serverOnlineIds);
                         }
                         refreshArrayList();
+                        updateWidget();
                     }
 
                     @Override

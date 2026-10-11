@@ -6,8 +6,8 @@
     android:orientation="horizontal"
     android:paddingStart="12dp"
     android:paddingEnd="12dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp">
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
 
     <LinearLayout
         android:id="@+id/noteButton"
@@ -19,41 +19,61 @@
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
         android:gravity="center_vertical"
-        android:padding="12dp">
+        android:minHeight="68dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="9dp"
+        android:paddingBottom="9dp">
 
         <TextView
-            android:id="@+id/noteId"
-            android:layout_width="40dp"
+            android:id="@+id/noteDragHandle"
+            android:layout_width="32dp"
             android:layout_height="40dp"
-            android:background="@drawable/note_id_background"
             android:gravity="center"
-            android:text="1"
-            android:textColor="@color/on_primary"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:text="\u2630"
+            android:textColor="@color/outline"
+            android:textSize="18sp"
+            android:contentDescription="Drag to reorder note" />
 
-        <TextView
-            android:id="@+id/noteName"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="8dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:text="Sample Note Title"
-            android:textColor="@color/on_surface"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/noteName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Sample Note Title"
+                android:textColor="@color/on_surface"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/notePreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="A short preview of the note content"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="13sp" />
+
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/onlineCloudBadge"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:src="@drawable/ic_cloud_upload_black_48dp"
+            android:tint="@color/on_surface_variant"
             android:contentDescription="Online Sync"
             android:visibility="gone"
-            android:layout_marginStart="8dp" />
+            android:layout_marginStart="10dp" />
 
     </LinearLayout>
 

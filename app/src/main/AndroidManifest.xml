@@ -28,7 +28,6 @@
             android:name=".NoteView"
             android:parentActivityName=".Home"
             android:label="Note"
-            android:noHistory="true"
             android:theme="@style/AppTheme.NoActionBar" >
         </activity>
 

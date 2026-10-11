@@ -230,6 +230,34 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
+    /** Remove online-linked local notes that were absent from a successfully fetched server list. */
+    public int deleteOnlineNotesMissingFrom(List<String> serverOnlineIds) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.beginTransaction();
+            int deleted;
+            if (serverOnlineIds == null || serverOnlineIds.isEmpty()) {
+                deleted = db.delete(NOTES_TABLE_NAME, IS_ONLINE_COLUMN + " = 1", null);
+            } else {
+                StringBuilder placeholders = new StringBuilder();
+                String[] ids = new String[serverOnlineIds.size()];
+                for (int i = 0; i < serverOnlineIds.size(); i++) {
+                    if (i > 0) placeholders.append(",");
+                    placeholders.append("?");
+                    ids[i] = serverOnlineIds.get(i);
+                }
+                deleted = db.delete(NOTES_TABLE_NAME,
+                        IS_ONLINE_COLUMN + " = 1 AND (" + ONLINE_ID_COLUMN + " IS NULL OR TRIM(" + ONLINE_ID_COLUMN
+                                + ") = '' OR " + ONLINE_ID_COLUMN + " NOT IN (" + placeholders + "))", ids);
+            }
+            db.setTransactionSuccessful();
+            return deleted;
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
+
     public void deleteNote(int noteId){
         SQLiteDatabase db = this.getReadableDatabase();
         for(int i = noteId; i < createNoteId() - 1; i++){

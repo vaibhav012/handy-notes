@@ -5,17 +5,13 @@
     <item
         android:id="@+id/action_account"
         android:title="@string/account"
-        android:icon="@drawable/ic_account_box_black_48dp"
+        android:icon="@drawable/ic_account_box_toolbar"
+        app:iconTint="@color/header_title"
         app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_export_import"
         android:title="@string/export_import"
-        app:showAsAction="never"/>
-
-    <item
-        android:id="@+id/action_server_settings"
-        android:title="@string/server_settings"
         app:showAsAction="never"/>
 
 </menu>

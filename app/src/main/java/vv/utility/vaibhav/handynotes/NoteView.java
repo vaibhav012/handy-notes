@@ -1,8 +1,11 @@
 package vv.utility.vaibhav.handynotes;
 
+import android.app.DownloadManager;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Environment;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,6 +17,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.Locale;
@@ -31,6 +36,9 @@ public class NoteView extends AppCompatActivity {
     private String originalNoteText;
     private String originalNoteName;
     private boolean isUpdatingSwitch = false;
+    private static final int REQUEST_PICK_ATTACHMENT = 4102;
+    private LinearLayout attachmentList;
+    private TextView attachmentStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +63,9 @@ public class NoteView extends AppCompatActivity {
         TextView dateAndTime = (TextView) findViewById(R.id.dateAndTime);
         onlineSyncSwitch = (SwitchCompat) findViewById(R.id.onlineSyncSwitch);
         syncStatusText = (TextView) findViewById(R.id.syncStatusText);
+        attachmentList = findViewById(R.id.attachmentList);
+        attachmentStatus = findViewById(R.id.attachmentStatus);
+        findViewById(R.id.addAttachmentButton).setOnClickListener(v -> pickAttachment());
 
         originalNoteName = mydb.getNoteName(noteId).trim();
         noteName.setText(originalNoteName);
@@ -77,6 +88,7 @@ public class NoteView extends AppCompatActivity {
             // Background refetch if online
             if (!onlineId.isEmpty()) {
                 refetchOnlineNote(onlineId);
+                refreshAttachments(onlineId);
             }
         }
 
@@ -172,6 +184,8 @@ public class NoteView extends AppCompatActivity {
                 public void onSuccess(ApiService.NoteSyncResult result) {
                     mydb.setOnlineStatus(noteId, true, result.onlineId);
                     syncStatusText.setText("Online sync enabled (Server ID: " + result.onlineId + ")");
+                    attachmentStatus.setText("Loading files…");
+                    refreshAttachments(result.onlineId);
                     Toast.makeText(NoteView.this, "Note activated for online sync", Toast.LENGTH_SHORT).show();
                 }
 
@@ -188,8 +202,189 @@ public class NoteView extends AppCompatActivity {
         } else {
             mydb.setOnlineStatus(noteId, true, existingOnlineId);
             syncStatusText.setText("Online sync enabled");
+            refreshAttachments(existingOnlineId);
             Toast.makeText(this, "Note activated for online sync", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void pickAttachment() {
+        if (!mydb.isNoteOnline(noteId)) {
+            Toast.makeText(this, "Enable Online Sync before attaching files", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        startActivityForResult(intent, REQUEST_PICK_ATTACHMENT);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_PICK_ATTACHMENT || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        String onlineId = mydb.getOnlineId(noteId);
+        if (onlineId.isEmpty()) {
+            Toast.makeText(this, "This note is not linked to the server yet", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Uri fileUri = data.getData();
+        attachmentStatus.setText("Uploading file…");
+        findViewById(R.id.addAttachmentButton).setEnabled(false);
+        ApiService.uploadNoteAttachment(this, onlineId, fileUri, new ApiService.ApiCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+                findViewById(R.id.addAttachmentButton).setEnabled(true);
+                Toast.makeText(NoteView.this, "File uploaded", Toast.LENGTH_SHORT).show();
+                refreshAttachments(onlineId);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                findViewById(R.id.addAttachmentButton).setEnabled(true);
+                attachmentStatus.setText(errorMessage);
+                Toast.makeText(NoteView.this, errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void refreshAttachments(String onlineId) {
+        if (onlineId == null || onlineId.isEmpty()) {
+            attachmentStatus.setText("Enable Online Sync to attach files");
+            return;
+        }
+        attachmentStatus.setText("Loading files…");
+        ApiService.fetchNoteAttachments(this, onlineId, new ApiService.ApiCallback<java.util.List<ApiService.NoteAttachment>>() {
+            @Override
+            public void onSuccess(java.util.List<ApiService.NoteAttachment> attachments) {
+                attachmentList.removeAllViews();
+                if (attachments.isEmpty()) {
+                    attachmentStatus.setText("No files attached");
+                    return;
+                }
+                attachmentStatus.setText(attachments.size() + (attachments.size() == 1 ? " file" : " files"));
+                for (ApiService.NoteAttachment attachment : attachments) addAttachmentRow(onlineId, attachment);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                attachmentStatus.setText(errorMessage);
+            }
+        });
+    }
+
+    private void addAttachmentRow(String onlineId, ApiService.NoteAttachment attachment) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(0, 2, 0, 2);
+
+        if (attachment.thumbnailUrl != null && !attachment.thumbnailUrl.isEmpty()) {
+            ImageView preview = new ImageView(this);
+            preview.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            preview.setContentDescription("Preview of " + attachment.fileName);
+            row.addView(preview, new LinearLayout.LayoutParams(dp(42), dp(42)));
+            ApiService.loadAttachmentPreview(attachment.thumbnailUrl, dp(42), new ApiService.ApiCallback<android.graphics.Bitmap>() {
+                @Override public void onSuccess(android.graphics.Bitmap bitmap) {
+                    if (preview.getParent() != null) preview.setImageBitmap(bitmap);
+                }
+                @Override public void onError(String errorMessage) { preview.setVisibility(View.GONE); }
+            });
+        } else {
+            TextView fileBadge = new TextView(this);
+            fileBadge.setText("FILE");
+            fileBadge.setTextColor(getColor(R.color.on_surface_variant));
+            fileBadge.setTextSize(9);
+            fileBadge.setGravity(android.view.Gravity.CENTER);
+            fileBadge.setBackgroundResource(R.drawable.rounded_edittext);
+            row.addView(fileBadge, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        }
+
+        LinearLayout details = new LinearLayout(this);
+        details.setOrientation(LinearLayout.VERTICAL);
+        details.setPadding(dp(8), 0, 0, 0);
+        row.addView(details, new LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView name = new TextView(this);
+        name.setText(attachment.fileName + " · " + formatFileSize(attachment.sizeBytes));
+        name.setTextColor(getColor(R.color.on_surface));
+        name.setTextSize(12);
+        name.setMaxLines(1);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        details.addView(name);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        details.addView(actions);
+        actions.addView(makeAttachmentAction("Open", () -> openAttachment(attachment)));
+        actions.addView(makeAttachmentAction("Download", () -> downloadAttachment(attachment)));
+        actions.addView(makeAttachmentAction("Remove", () ->
+                ApiService.deleteNoteAttachment(NoteView.this, onlineId, attachment.id,
+                        new ApiService.ApiCallback<Boolean>() {
+                            @Override public void onSuccess(Boolean result) { refreshAttachments(onlineId); }
+                            @Override public void onError(String errorMessage) {
+                                Toast.makeText(NoteView.this, errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        })));
+        attachmentList.addView(row);
+    }
+
+    private TextView makeAttachmentAction(String label, Runnable action) {
+        TextView button = new TextView(this);
+        button.setText(label);
+        button.setTextColor(getColor(R.color.primary));
+        button.setTextSize(11);
+        button.setGravity(android.view.Gravity.CENTER);
+        button.setPadding(dp(5), 0, dp(5), 0);
+        button.setMinHeight(dp(24));
+        button.setBackgroundResource(android.R.drawable.list_selector_background);
+        button.setOnClickListener(v -> action.run());
+        return button;
+    }
+
+    private void openAttachment(ApiService.NoteAttachment attachment) {
+        if (attachment.downloadUrl == null || attachment.downloadUrl.isEmpty()) {
+            Toast.makeText(this, "A download link is not available. Refresh the file list.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(attachment.downloadUrl));
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException e) {
+            Toast.makeText(this, "No app can open this file", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String formatFileSize(long sizeBytes) {
+        if (sizeBytes < 1024) return sizeBytes + " B";
+        if (sizeBytes < 1024 * 1024) return String.format(Locale.getDefault(), "%.1f KB", sizeBytes / 1024.0);
+        return String.format(Locale.getDefault(), "%.1f MB", sizeBytes / (1024.0 * 1024.0));
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private void downloadAttachment(ApiService.NoteAttachment attachment) {
+        if (attachment.downloadUrl == null || attachment.downloadUrl.isEmpty()) {
+            Toast.makeText(this, "A download link is not available. Refresh the file list.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        String downloadName = attachment.fileName == null ? "attachment" : attachment.fileName
+                .replaceAll("[\\\\/\\u0000-\\u001f\\u007f]", "_");
+        if (downloadName.trim().isEmpty() || downloadName.equals(".") || downloadName.equals("..")) {
+            downloadName = "attachment";
+        }
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(attachment.downloadUrl))
+                .setTitle(downloadName)
+                .setDescription("Downloading note attachment")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, downloadName);
+        if (attachment.contentType != null && !attachment.contentType.isEmpty()) {
+            request.setMimeType(attachment.contentType);
+        }
+        manager.enqueue(request);
+        Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show();
     }
 
     private void deactivateOnlineSync() {
@@ -226,7 +421,7 @@ public class NoteView extends AppCompatActivity {
 
                     @Override
                     public void onError(String errorMessage) {
-                        Toast.makeText(NoteView.this, "Saved locally (Server update error)", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(NoteView.this, "Saved locally. Server update failed: " + errorMessage, Toast.LENGTH_LONG).show();
                     }
                 });
             } else {

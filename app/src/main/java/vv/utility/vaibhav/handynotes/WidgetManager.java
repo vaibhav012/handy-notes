@@ -1,6 +1,7 @@
 package vv.utility.vaibhav.handynotes;
 
 import android.app.PendingIntent;
+import androidx.core.app.TaskStackBuilder;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
@@ -203,6 +204,16 @@ public class WidgetManager extends AppWidgetProvider {
         // Use unique request code per widget to avoid conflicts between multiple widgets
         PendingIntent clickPI = PendingIntent.getActivity(context, appWidgetId * 10, clickIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
+
+        if (noteId > 0 && !noteName.isEmpty()) {
+            Intent openNoteIntent = new Intent(context, NoteView.class);
+            openNoteIntent.putExtra("noteId", String.valueOf(noteId));
+            PendingIntent openNotePI = TaskStackBuilder.create(context)
+                    .addNextIntentWithParentStack(openNoteIntent)
+                    .getPendingIntent(appWidgetId * 10 + 3,
+                            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            widget.setOnClickPendingIntent(R.id.widgetNoteName, openNotePI);
+        }
         
         // Set up click intent for previous note button
         Intent prevIntent = new Intent(context, WidgetManager.class);
