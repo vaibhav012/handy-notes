@@ -36,6 +36,7 @@ public class NoteView extends AppCompatActivity {
     private String originalNoteText;
     private String originalNoteName;
     private boolean isUpdatingSwitch = false;
+    private boolean isNewNote = false;
     private static final int REQUEST_PICK_ATTACHMENT = 4102;
     private LinearLayout attachmentList;
     private TextView attachmentStatus;
@@ -56,7 +57,8 @@ public class NoteView extends AppCompatActivity {
         Intent intent = getIntent();
         mydb = new DBHelper(this);
 
-        noteId = Integer.parseInt(intent.getStringExtra("noteId"));
+        isNewNote = intent.getBooleanExtra("newNote", false);
+        noteId = isNewNote ? mydb.createNoteId() : Integer.parseInt(intent.getStringExtra("noteId"));
 
         noteName = (EditText) findViewById(R.id.noteName);
         noteNote = (EditText) findViewById(R.id.noteNote);
@@ -67,15 +69,15 @@ public class NoteView extends AppCompatActivity {
         attachmentStatus = findViewById(R.id.attachmentStatus);
         findViewById(R.id.addAttachmentButton).setOnClickListener(v -> pickAttachment());
 
-        originalNoteName = mydb.getNoteName(noteId).trim();
+        originalNoteName = isNewNote ? "" : mydb.getNoteName(noteId).trim();
         noteName.setText(originalNoteName);
         
-        originalNoteText = mydb.getNote(noteId).trim();
+        originalNoteText = isNewNote ? "" : mydb.getNote(noteId).trim();
         noteNote.setText(originalNoteText);
-        dateAndTime.setText(formatDateTime(mydb.getDateTime(noteId).trim()));
+        dateAndTime.setText(isNewNote ? "New note" : formatDateTime(mydb.getDateTime(noteId).trim()));
 
         // Set online sync status
-        boolean isOnline = mydb.isNoteOnline(noteId);
+        boolean isOnline = !isNewNote && mydb.isNoteOnline(noteId);
         String onlineId = mydb.getOnlineId(noteId);
 
         isUpdatingSwitch = true;
@@ -211,6 +213,10 @@ public class NoteView extends AppCompatActivity {
         if (!mydb.isNoteOnline(noteId)) {
             Toast.makeText(this, "Enable Online Sync before attaching files", Toast.LENGTH_SHORT).show();
             return;
+        }
+        if (isNewNote) {
+            onlineSyncSwitch.setVisibility(View.GONE);
+            findViewById(R.id.attachmentsPanel).setVisibility(View.GONE);
         }
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -398,13 +404,24 @@ public class NoteView extends AppCompatActivity {
     private void saveNote() {
         String noteText = noteNote.getText().toString().trim();
         String newNoteName = noteName.getText().toString().trim();
+
+        if (isNewNote && noteText.isEmpty() && newNoteName.isEmpty()) {
+            Toast.makeText(this, "Write a note or add a title before saving", Toast.LENGTH_SHORT).show();
+            return;
+        }
         
         if (newNoteName.isEmpty()) {
             newNoteName = originalNoteName;
             noteName.setText(newNoteName);
         }
         
-        mydb.updateNote(noteId, newNoteName, noteText);
+        if (isNewNote) {
+            if (newNoteName.isEmpty()) newNoteName = noteText.isEmpty() ? "Untitled Note" : noteText;
+            mydb.addNote(noteId, newNoteName, noteText);
+            isNewNote = false;
+        } else {
+            mydb.updateNote(noteId, newNoteName, noteText);
+        }
         originalNoteText = noteText;
         originalNoteName = newNoteName;
 

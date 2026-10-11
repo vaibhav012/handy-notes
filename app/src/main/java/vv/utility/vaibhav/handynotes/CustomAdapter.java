@@ -90,7 +90,10 @@ public class CustomAdapter extends BaseAdapter {
             dragHandle.setOnTouchListener((v, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     android.content.ClipData data = android.content.ClipData.newPlainText("noteId", String.valueOf(currentNoteId));
-                    v.startDragAndDrop(data, new View.DragShadowBuilder(v), null, 0);
+                    View row = (View) v.getParent().getParent();
+                    row.setAlpha(0.55f);
+                    boolean started = v.startDragAndDrop(data, new View.DragShadowBuilder(row), null, 0);
+                    if (!started) row.setAlpha(1f);
                     return true;
                 }
                 return false;

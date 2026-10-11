@@ -68,78 +68,27 @@
 
     </LinearLayout>
 
-    <!-- Add Note Expanded Card -->
-    <LinearLayout
-        android:id="@+id/addNoteLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="vertical"
-        android:background="@drawable/rounded_card"
-        android:elevation="8dp"
-        android:padding="20dp"
-        android:layout_margin="12dp"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="New Note"
-            android:textColor="@color/on_surface"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
-
-        <EditText
-            android:id="@+id/addNoteName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Title (optional)"
-            android:background="@drawable/rounded_edittext"
-            android:textColor="@color/on_background"
-            android:textColorHint="@color/outline"
-            android:padding="14dp"
-            android:singleLine="true"
-            android:layout_marginBottom="12dp" />
-
-        <EditText
-            android:id="@+id/addNoteNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:lines="3"
-            android:hint="Write your note..."
-            android:gravity="top|start"
-            android:background="@drawable/rounded_edittext"
-            android:textColor="@color/on_background"
-            android:textColorHint="@color/outline"
-            android:padding="14dp"
-            android:layout_marginBottom="16dp" />
-
-        <Button
-            android:id="@+id/addNoteButton"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Add Note"
-            android:background="@drawable/rounded_button_primary"
-            android:textColor="@color/on_primary"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-    </LinearLayout>
-
-    <!-- Bottom Add Note Trigger Button -->
+    <!-- Compact add action stays within reach when the note list is long. -->
     <Button
         android:id="@+id/addNote"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
         android:layout_alignParentBottom="true"
-        android:layout_margin="16dp"
-        android:text="+ Add New Note"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:minWidth="0dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:text="+  New note"
         android:background="@drawable/rounded_button_primary"
         android:textColor="@color/on_primary"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold"
-        android:elevation="4dp" />
+        android:elevation="3dp"
+        android:visibility="gone" />
 
     <!-- Context Options Overlay -->
     <RelativeLayout

@@ -12,12 +12,10 @@ import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.DragEvent;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -32,11 +30,12 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     RelativeLayout optionsLayout;
     View noNote;
     Button addNote;
-    LinearLayout addNoteLayout;
 
     ArrayList<Integer> noteIdList;
     ArrayList<String> noteNameList;
     ArrayList<String> notePreviewList;
+    private View highlightedDropRow;
+    private View addNoteFooter;
 
     @Override
     protected void onResume() {
@@ -64,47 +63,54 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
 
         optionsLayout = (RelativeLayout) findViewById(R.id.optionsLayout);
         noNote = findViewById(R.id.noNote);
-        addNoteLayout = (LinearLayout) findViewById(R.id.addNoteLayout);
         noteListView = (ListView) findViewById(R.id.noteListView);
+        addNoteFooter = getLayoutInflater().inflate(R.layout.note_list_add_footer, noteListView, false);
+        addNoteFooter.findViewById(R.id.addNoteFooterCard).setOnClickListener(v -> openNewNote());
+        noteListView.addFooterView(addNoteFooter, null, false);
+        noteListView.setOnDragListener((view, event) -> {
+            int target = noteListView.pointToPosition((int) event.getX(), (int) event.getY());
+            View nextHighlightedRow = target >= 0 ? noteListView.getChildAt(target - noteListView.getFirstVisiblePosition()) : null;
+            if (event.getAction() == DragEvent.ACTION_DRAG_LOCATION && nextHighlightedRow != highlightedDropRow) {
+                clearDropHighlight();
+                highlightedDropRow = nextHighlightedRow;
+                if (highlightedDropRow != null) {
+                    highlightedDropRow.animate().scaleX(0.98f).scaleY(0.98f).alpha(0.72f).setDuration(90).start();
+                    highlightedDropRow.setElevation(getResources().getDisplayMetrics().density * 8);
+                }
+                return true;
+            }
+            if (event.getAction() == DragEvent.ACTION_DRAG_ENDED) {
+                clearDropHighlight();
+                return true;
+            }
+            if (event.getAction() == DragEvent.ACTION_DROP && event.getClipData() != null) {
+                int noteId = Integer.parseInt(event.getClipData().getItemAt(0).getText().toString());
+                int source = noteIdList.indexOf(noteId);
+                if (target >= noteIdList.size()) target = noteIdList.size() - 1;
+                if (source >= 0 && target >= 0 && source != target) {
+                    noteIdList.remove(source); noteNameList.remove(source); notePreviewList.remove(source);
+                    noteIdList.add(target, noteId);
+                    noteNameList.add(target, mydb.getNoteName(noteId));
+                    String content = mydb.getNote(noteId);
+                    notePreviewList.add(target, content == null ? "" : content.trim().replaceAll("\\s+", " "));
+                    saveNoteOrder(noteIdList);
+                    noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList, notePreviewList));
+                }
+                clearDropHighlight();
+                return true;
+            }
+            return true;
+        });
         addNote = (Button) findViewById(R.id.addNote);
-        final Button addNoteButton = (Button) findViewById(R.id.addNoteButton);
-        final EditText addNoteName = (EditText) findViewById(R.id.addNoteName);
-        final EditText addNoteNote = (EditText) findViewById(R.id.addNoteNote);
         final Button deleteNote = (Button) findViewById(R.id.deleteNote);
         //noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
 
         refreshArrayList();
 
-        addNoteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                addNoteLayout.setVisibility(View.GONE);
-                addNote.setVisibility(View.VISIBLE);
-                int noteId = mydb.createNoteId();
-                String noteName = addNoteName.getText().toString().trim();
-                String note = addNoteNote.getText().toString().trim();
-                if(note.isEmpty()){
-                    Toast.makeText(getBaseContext(),"Cannot add empty note",Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    if (noteName.isEmpty()) {
-                        noteName = note;
-                    }
-                    mydb.addNote(noteId, noteName, note);
-                    noteIdList.add(noteId);
-                    noteNameList.add(noteName);
-                    refreshArrayList();
-                    addNoteNote.getText().clear();
-                    addNoteName.getText().clear();
-                    updateWidget();
-                }
-            }
-        });
-
         addNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showAddNoteLayout();
+                openNewNote();
             }
         });
 
@@ -126,13 +132,30 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                         }
                     });
                 }
-                mydb.deleteNote(noteIdForOptions);
+                ArrayList<Integer> nextOrder = new ArrayList<>(noteIdList);
+                int deletedId = noteIdForOptions;
+                mydb.deleteNote(deletedId);
+                nextOrder.remove(Integer.valueOf(deletedId));
+                for (int i = 0; i < nextOrder.size(); i++) if (nextOrder.get(i) > deletedId) nextOrder.set(i, nextOrder.get(i) - 1);
+                saveNoteOrder(nextOrder);
                 refreshArrayList();
                 noteIdForOptions = -1;
                 optionsLayout.setVisibility(View.GONE);
                 updateWidget();
             }
         });
+    }
+
+    private void clearDropHighlight() {
+        for (int i = 0; i < noteListView.getChildCount(); i++) {
+            noteListView.getChildAt(i).setAlpha(1f);
+        }
+        if (highlightedDropRow != null) {
+            highlightedDropRow.animate().cancel();
+            highlightedDropRow.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(100).start();
+            highlightedDropRow.setElevation(0f);
+            highlightedDropRow = null;
+        }
     }
 
     @Override
@@ -179,7 +202,6 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         // Get all notes from database
         if (mydb.getCount() > 0) {
             noNote.setVisibility(View.GONE);
-            noteListView.setAdapter(null);
             noteIdList.clear();
             noteNameList.clear();
             notePreviewList.clear();
@@ -208,12 +230,53 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             }
         } else {
             noNote.setVisibility(View.VISIBLE);
-            noteListView.setAdapter(null);
+            addNote.setVisibility(View.GONE);
             noteIdList.clear();
             noteNameList.clear();
             notePreviewList.clear();
         }
+        applySavedNoteOrder();
+        updateAddNoteAffordance();
         noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList, notePreviewList));
+    }
+
+    private void updateAddNoteAffordance() {
+        boolean useDock = noteIdList.size() >= 5;
+        if (addNoteFooter != null) {
+            android.view.ViewGroup.LayoutParams params = addNoteFooter.getLayoutParams();
+            if (params != null) {
+                params.height = useDock ? 0 : android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+                addNoteFooter.setLayoutParams(params);
+            }
+            addNoteFooter.setVisibility(useDock ? View.GONE : View.VISIBLE);
+        }
+        if (addNote != null) addNote.setVisibility(useDock ? View.VISIBLE : View.GONE);
+    }
+
+    private void applySavedNoteOrder() {
+        String saved = getSharedPreferences("note_sort", MODE_PRIVATE).getString("ordered_ids", "");
+        ArrayList<Integer> ids = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<String> previews = new ArrayList<>();
+        if (!saved.isEmpty()) for (String token : saved.split(",")) {
+            try {
+                int id = Integer.parseInt(token), at = noteIdList.indexOf(id);
+                if (at >= 0) { ids.add(id); names.add(noteNameList.get(at)); previews.add(notePreviewList.get(at)); }
+            } catch (NumberFormatException ignored) { }
+        }
+        for (int i = 0; i < noteIdList.size(); i++) if (!ids.contains(noteIdList.get(i))) {
+            ids.add(noteIdList.get(i)); names.add(noteNameList.get(i)); previews.add(notePreviewList.get(i));
+        }
+        noteIdList.clear(); noteIdList.addAll(ids);
+        noteNameList.clear(); noteNameList.addAll(names);
+        notePreviewList.clear(); notePreviewList.addAll(previews);
+        saveNoteOrder(ids);
+    }
+
+    private void saveNoteOrder(ArrayList<Integer> ids) {
+        StringBuilder value = new StringBuilder();
+        for (int id : ids) { if (value.length() > 0) value.append(','); value.append(id); }
+        getSharedPreferences("note_sort", MODE_PRIVATE).edit().putString("ordered_ids", value.toString()).apply();
     }
 
     private void syncServerNotes() {
@@ -256,15 +319,10 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         });
     }
 
-    public void showAddNoteLayout(){
-        if(addNote.getVisibility() == View.VISIBLE) {
-            addNoteLayout.setVisibility(View.VISIBLE);
-            addNote.setVisibility(View.GONE);
-        }
-        else {
-            addNoteLayout.setVisibility(View.GONE);
-            addNote.setVisibility(View.VISIBLE);
-        }
+    private void openNewNote() {
+        Intent intent = new Intent(this, NoteView.class);
+        intent.putExtra("newNote", true);
+        startActivity(intent);
     }
 
     public void updateWidget(){
