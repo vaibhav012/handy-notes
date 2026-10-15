@@ -43,16 +43,51 @@
             android:layout_marginStart="4dp"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/noteName"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Sample Note Title"
-                android:textColor="@color/on_surface"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/noteName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Sample Note Title"
+                    android:textColor="@color/on_surface"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/defaultNoteBadge"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/note_default_dot"
+                    android:contentDescription="Default widget note"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/widgetVisibilityBadge"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/note_default_dot"
+                    android:contentDescription="Visible in widget" />
+
+                <ImageView
+                    android:id="@+id/onlineCloudBadge"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Online sync enabled"
+                    android:src="@drawable/ic_cloud_upload_black_48dp"
+                    android:tint="@color/on_surface_variant"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/notePreview"
@@ -66,16 +101,6 @@
                 android:textSize="13sp" />
 
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/onlineCloudBadge"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_cloud_upload_black_48dp"
-            android:tint="@color/on_surface_variant"
-            android:contentDescription="Online Sync"
-            android:visibility="gone"
-            android:layout_marginStart="10dp" />
 
     </LinearLayout>
 

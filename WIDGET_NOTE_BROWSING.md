@@ -1,0 +1,7 @@
+# Widget editor note browsing
+
+The edit screen opened from a home-screen widget lets you browse notes with a compact horizontal bar below Cancel and Update. Drag the bar left or right to scrub through the titled notes; its position maps to the ordered note list, so holding and dragging can move across several notes in one gesture. The editor loads each note as the bar moves, while its text field keeps a fixed height so changing content does not resize the card. The list is ordered by local note ID and excludes notes hidden from widgets. The bar is disabled when there is only one available note.
+
+Before the bar selects another note, the editor saves the current text locally and remembers online notes that need syncing. When the drag ends, it syncs each changed online note once, then refreshes the widget. The editor loads the destination note's title and content and updates the selected note preference for the launching widget, so the widget and editor stay in sync. Notes without a usable title are excluded from browsing, matching `WidgetManager`.
+
+`noteBrowseBar` is a `SeekBar` inside the footer container identified by `widgetEditorFooter` in `activity_edit_widget.xml`. `EditWidget` loads the eligible note IDs once and loads the corresponding title and content as progress changes. The `widgetText` EditText uses a fixed 220dp height to keep the editor layout steady. Each departed draft is persisted locally, online sync is queued until tracking ends, and the widget refreshes on release.

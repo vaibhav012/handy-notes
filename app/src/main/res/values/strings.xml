@@ -9,6 +9,14 @@
     <string name="add_note">Add Note</string>
     <string name="account">Account</string>
     <string name="export_import">Export/Import</string>
+    <string name="set_widget_default">Set as widget default</string>
+    <string name="widget_default_set">Default widget note set</string>
+    <string name="widget_default_note_current">Current widget default</string>
+    <string name="note_show_in_widget">Show in widget</string>
+    <string name="note_hide_from_widget">Hide from widget</string>
+    <string name="note_hidden_from_widget">Note hidden from widget</string>
+    <string name="note_shown_in_widget">Note shown in widget</string>
+    <string name="note_visible_in_widget">Visible in widget</string>
     <string name="export_notes">Export Notes</string>
     <string name="import_notes">Import Notes</string>
     <string name="online_sync">Online Sync</string>

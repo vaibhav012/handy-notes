@@ -2,6 +2,8 @@ package vv.utility.vaibhav.handynotes;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,6 +55,8 @@ public class CustomAdapter extends BaseAdapter {
     private static class ViewHolder {
         TextView noteName;
         TextView notePreview;
+        ImageView defaultNoteBadge;
+        ImageView widgetVisibilityBadge;
         ImageView onlineCloudBadge;
     }
 
@@ -64,6 +68,8 @@ public class CustomAdapter extends BaseAdapter {
             holder = new ViewHolder();
             holder.noteName = convertView.findViewById(R.id.noteName);
             holder.notePreview = convertView.findViewById(R.id.notePreview);
+            holder.defaultNoteBadge = convertView.findViewById(R.id.defaultNoteBadge);
+            holder.widgetVisibilityBadge = convertView.findViewById(R.id.widgetVisibilityBadge);
             holder.onlineCloudBadge = convertView.findViewById(R.id.onlineCloudBadge);
             convertView.setTag(holder);
         } else {
@@ -76,6 +82,22 @@ public class CustomAdapter extends BaseAdapter {
         holder.noteName.setText(currentNoteName);
         String preview = notePreviewList.get(position);
         holder.notePreview.setText(preview.isEmpty() ? "No additional text" : preview);
+
+        int defaultNoteId = PreferenceManager.getDefaultSharedPreferences(context)
+                .getInt(WidgetManager.PREF_DEFAULT_NOTE_ID, -1);
+        if (holder.defaultNoteBadge != null) {
+            holder.defaultNoteBadge.setVisibility(defaultNoteId == currentNoteId ? View.VISIBLE : View.GONE);
+        }
+        boolean visibleInWidget = !WidgetManager.isNoteHidden(context, currentNoteId);
+        if (holder.widgetVisibilityBadge != null) {
+            holder.widgetVisibilityBadge.setVisibility(visibleInWidget ? View.VISIBLE : View.GONE);
+            if (visibleInWidget) {
+                holder.widgetVisibilityBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        context.getColor(R.color.widget_visible_indicator)));
+                holder.widgetVisibilityBadge.setContentDescription(
+                        context.getString(R.string.note_visible_in_widget));
+            }
+        }
 
         try (DBHelper dbHelper = new DBHelper(context)) {
             boolean isOnline = dbHelper.isNoteOnline(currentNoteId);

@@ -9,11 +9,15 @@ import android.widget.RemoteViewsService;
 public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory {
     private String[] items;
     private Context ctxt=null;
+    private int noteId;
 
     public WidgetViewsFactory(Context ctxt, Intent intent) {
         this.ctxt=ctxt;
+        noteId = intent.getIntExtra("noteId", -1);
         String noteText = intent.getStringExtra("text");
-        if (noteText != null && !noteText.isEmpty()) {
+        if (noteId <= 0) {
+            items = new String[]{"No notes selected. Long-press a note in the app to show it here."};
+        } else if (noteText != null && !noteText.isEmpty()) {
             // Display full text as a single item
             items = new String[]{noteText};
         } else {
@@ -42,12 +46,13 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
 
         row.setTextViewText(android.R.id.text1, items[position]);
 
-        Intent i=new Intent();
-        Bundle extras=new Bundle();
-
-        extras.putString("noteText", items[position]);
-        i.putExtras(extras);
-        row.setOnClickFillInIntent(android.R.id.text1, i);
+        if (noteId > 0) {
+            Intent i=new Intent();
+            Bundle extras=new Bundle();
+            extras.putString("noteText", items[position]);
+            i.putExtras(extras);
+            row.setOnClickFillInIntent(android.R.id.text1, i);
+        }
 
         return(row);
     }

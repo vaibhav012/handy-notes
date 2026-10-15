@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -103,6 +104,32 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         });
         addNote = (Button) findViewById(R.id.addNote);
         final Button deleteNote = (Button) findViewById(R.id.deleteNote);
+        Button setWidgetDefaultNote = findViewById(R.id.setWidgetDefaultNote);
+        Button toggleWidgetNoteVisibility = findViewById(R.id.toggleWidgetNoteVisibility);
+
+        setWidgetDefaultNote.setOnClickListener(v -> {
+            if (noteIdForOptions < 0) return;
+            WidgetManager.setNoteHidden(this, noteIdForOptions, false);
+            PreferenceManager.getDefaultSharedPreferences(this).edit()
+                    .putInt(WidgetManager.PREF_DEFAULT_NOTE_ID, noteIdForOptions).apply();
+            Toast.makeText(this, R.string.widget_default_set, Toast.LENGTH_SHORT).show();
+            optionsLayout.setVisibility(View.GONE);
+            noteIdForOptions = -1;
+            refreshArrayList();
+            updateWidget();
+        });
+
+        toggleWidgetNoteVisibility.setOnClickListener(v -> {
+            if (noteIdForOptions < 0) return;
+            boolean hide = !WidgetManager.isNoteHidden(this, noteIdForOptions);
+            WidgetManager.setNoteHidden(this, noteIdForOptions, hide);
+            Toast.makeText(this, hide ? R.string.note_hidden_from_widget : R.string.note_shown_in_widget,
+                    Toast.LENGTH_SHORT).show();
+            optionsLayout.setVisibility(View.GONE);
+            noteIdForOptions = -1;
+            refreshArrayList();
+            updateWidget();
+        });
         //noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList));
 
         refreshArrayList();
@@ -134,6 +161,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                 }
                 ArrayList<Integer> nextOrder = new ArrayList<>(noteIdList);
                 int deletedId = noteIdForOptions;
+                WidgetManager.remapNotePreferencesAfterDeletion(Home.this, deletedId);
                 mydb.deleteNote(deletedId);
                 nextOrder.remove(Integer.valueOf(deletedId));
                 for (int i = 0; i < nextOrder.size(); i++) if (nextOrder.get(i) > deletedId) nextOrder.set(i, nextOrder.get(i) - 1);
@@ -161,6 +189,15 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     @Override
     public void showOptions(int noteId) {
         noteIdForOptions = noteId;
+        int defaultNoteId = PreferenceManager.getDefaultSharedPreferences(this)
+                .getInt(WidgetManager.PREF_DEFAULT_NOTE_ID, -1);
+        boolean isDefault = noteId == defaultNoteId;
+        Button setDefault = findViewById(R.id.setWidgetDefaultNote);
+        setDefault.setText(isDefault ? R.string.widget_default_note_current : R.string.set_widget_default);
+        setDefault.setEnabled(!isDefault);
+        boolean isHidden = WidgetManager.isNoteHidden(this, noteId);
+        Button toggleVisibility = findViewById(R.id.toggleWidgetNoteVisibility);
+        toggleVisibility.setText(isHidden ? R.string.note_show_in_widget : R.string.note_hide_from_widget);
         optionsLayout.setVisibility(View.VISIBLE);
     }
 

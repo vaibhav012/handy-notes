@@ -110,6 +110,7 @@
             android:elevation="12dp">
 
             <TextView
+                android:id="@+id/noteOptionsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Note Options"
@@ -117,6 +118,28 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/setWidgetDefaultNote"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="8dp"
+                android:text="Set as widget default"
+                android:background="@drawable/rounded_button_secondary"
+                android:textColor="@color/on_background"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/toggleWidgetNoteVisibility"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="8dp"
+                android:text="Hide from widget"
+                android:background="@drawable/rounded_button_secondary"
+                android:textColor="@color/on_background"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/deleteNote"

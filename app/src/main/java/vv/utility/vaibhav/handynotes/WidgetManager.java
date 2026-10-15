@@ -15,11 +15,54 @@ import android.util.Log;
 import android.widget.RemoteViews;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class WidgetManager extends AppWidgetProvider {
     public static String ACTION_PREV_NOTE = "vv.utility.vaibhav.handynotes.PREV_NOTE";
     public static String ACTION_NEXT_NOTE = "vv.utility.vaibhav.handynotes.NEXT_NOTE";
+    public static final String PREF_DEFAULT_NOTE_ID = "widget_default_note_id";
+    public static final String PREF_HIDDEN_NOTE_IDS = "widget_hidden_note_ids";
+
+    public static boolean isNoteHidden(Context context, int noteId) {
+        Set<String> hidden = PreferenceManager.getDefaultSharedPreferences(context)
+                .getStringSet(PREF_HIDDEN_NOTE_IDS, java.util.Collections.emptySet());
+        return hidden.contains(String.valueOf(noteId));
+    }
+
+    public static void setNoteHidden(Context context, int noteId, boolean hiddenNow) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Set<String> hidden = new HashSet<>(prefs.getStringSet(PREF_HIDDEN_NOTE_IDS, java.util.Collections.emptySet()));
+        String id = String.valueOf(noteId);
+        if (hiddenNow) hidden.add(id); else hidden.remove(id);
+        prefs.edit().putStringSet(PREF_HIDDEN_NOTE_IDS, hidden).apply();
+    }
+
+    public static void remapNotePreferencesAfterDeletion(Context context, int deletedNoteId) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = prefs.edit();
+        int defaultNoteId = prefs.getInt(PREF_DEFAULT_NOTE_ID, -1);
+        if (defaultNoteId == deletedNoteId) editor.remove(PREF_DEFAULT_NOTE_ID);
+        else if (defaultNoteId > deletedNoteId) editor.putInt(PREF_DEFAULT_NOTE_ID, defaultNoteId - 1);
+
+        for (String key : prefs.getAll().keySet()) {
+            if (!key.startsWith("widget_note_")) continue;
+            int selectedId = prefs.getInt(key, -1);
+            if (selectedId == deletedNoteId) editor.putInt(key, -1);
+            else if (selectedId > deletedNoteId) editor.putInt(key, selectedId - 1);
+        }
+
+        Set<String> remappedHidden = new HashSet<>();
+        for (String id : prefs.getStringSet(PREF_HIDDEN_NOTE_IDS, java.util.Collections.emptySet())) {
+            try {
+                int hiddenId = Integer.parseInt(id);
+                if (hiddenId < deletedNoteId) remappedHidden.add(id);
+                else if (hiddenId > deletedNoteId) remappedHidden.add(String.valueOf(hiddenId - 1));
+            } catch (NumberFormatException ignored) { }
+        }
+        editor.putStringSet(PREF_HIDDEN_NOTE_IDS, remappedHidden).apply();
+    }
 
     @Override
     public void onUpdate(Context ctxt, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -32,7 +75,7 @@ public class WidgetManager extends AppWidgetProvider {
                 int selectedNoteId = prefs.getInt("widget_note_" + appWidgetIds[i], -1);
             
                 // Get all note IDs from database
-                ArrayList<Integer> allNoteIds = getAllNoteIds(mydb);
+                ArrayList<Integer> allNoteIds = getAllNoteIds(ctxt, mydb);
             
                 // Check if the selected note still exists, if not use first note from list
                 if (selectedNoteId == -1 || !allNoteIds.contains(selectedNoteId)) {
@@ -43,8 +86,8 @@ public class WidgetManager extends AppWidgetProvider {
                         editor.putInt("widget_note_" + appWidgetIds[i], selectedNoteId);
                         editor.apply();
                     } else {
-                        // No notes available, skip this widget
-                        continue;
+                        selectedNoteId = -1;
+                        prefs.edit().putInt("widget_note_" + appWidgetIds[i], selectedNoteId).apply();
                     }
                 }
             
@@ -85,7 +128,7 @@ public class WidgetManager extends AppWidgetProvider {
                 
                     // If no note is set, get first note from list
                     if (currentNoteId == -1) {
-                        ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
+                        ArrayList<Integer> noteIds = getAllNoteIds(context, dbHelper);
                         if (!noteIds.isEmpty()) {
                             currentNoteId = noteIds.get(0);
                             SharedPreferences.Editor editor = prefs.edit();
@@ -99,9 +142,9 @@ public class WidgetManager extends AppWidgetProvider {
                 
                     int newNoteId;
                     if (ACTION_PREV_NOTE.equals(intent.getAction())) {
-                        newNoteId = getPreviousNoteId(dbHelper, currentNoteId);
+                        newNoteId = getPreviousNoteId(context, dbHelper, currentNoteId);
                     } else {
-                        newNoteId = getNextNoteId(dbHelper, currentNoteId);
+                        newNoteId = getNextNoteId(context, dbHelper, currentNoteId);
                     }
                 
                     // Only update if we have a valid note ID
@@ -203,7 +246,9 @@ public class WidgetManager extends AppWidgetProvider {
         clickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         // Use unique request code per widget to avoid conflicts between multiple widgets
         PendingIntent clickPI = PendingIntent.getActivity(context, appWidgetId * 10, clickIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
+        if (noteId > 0) {
+            widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
+        }
 
         if (noteId > 0 && !noteName.isEmpty()) {
             Intent openNoteIntent = new Intent(context, NoteView.class);
@@ -230,14 +275,21 @@ public class WidgetManager extends AppWidgetProvider {
         nextIntent.setData(Uri.parse("widget://next/" + appWidgetId));
         PendingIntent nextPI = PendingIntent.getBroadcast(context, appWidgetId * 10 + 2, nextIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         widget.setOnClickPendingIntent(R.id.nextNoteButton, nextPI);
+
+        Intent defaultNoteIntent = new Intent(context, EditWidget.class);
+        defaultNoteIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        defaultNoteIntent.putExtra("openDefaultNote", true);
+        PendingIntent defaultNotePI = PendingIntent.getActivity(context, appWidgetId * 10 + 4,
+                defaultNoteIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        widget.setOnClickPendingIntent(R.id.openDefaultNoteButton, defaultNotePI);
         
         // Update the widget - this updates both the note name and triggers the adapter refresh
         appWidgetManager.updateAppWidget(appWidgetId, widget);
         
     }
 
-    private int getNextNoteId(DBHelper dbHelper, int currentNoteId) {
-        ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
+    private int getNextNoteId(Context context, DBHelper dbHelper, int currentNoteId) {
+        ArrayList<Integer> noteIds = getAllNoteIds(context, dbHelper);
         if (noteIds.isEmpty()) {
             return -1;
         }
@@ -252,8 +304,8 @@ public class WidgetManager extends AppWidgetProvider {
         return noteIds.get(nextIndex);
     }
 
-    private int getPreviousNoteId(DBHelper dbHelper, int currentNoteId) {
-        ArrayList<Integer> noteIds = getAllNoteIds(dbHelper);
+    private int getPreviousNoteId(Context context, DBHelper dbHelper, int currentNoteId) {
+        ArrayList<Integer> noteIds = getAllNoteIds(context, dbHelper);
         if (noteIds.isEmpty()) {
             return -1;
         }
@@ -268,8 +320,10 @@ public class WidgetManager extends AppWidgetProvider {
         return noteIds.get(prevIndex);
     }
 
-    private ArrayList<Integer> getAllNoteIds(DBHelper dbHelper) {
+    private ArrayList<Integer> getAllNoteIds(Context context, DBHelper dbHelper) {
         ArrayList<Integer> noteIds = new ArrayList<Integer>();
+        Set<String> hiddenNoteIds = PreferenceManager.getDefaultSharedPreferences(context)
+                .getStringSet(PREF_HIDDEN_NOTE_IDS, java.util.Collections.emptySet());
         
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         try (Cursor cursor = db.rawQuery("SELECT " + DBHelper.NOTE_ID + ", "
@@ -279,7 +333,8 @@ public class WidgetManager extends AppWidgetProvider {
                 String noteName = cursor.getString(1);
                 if (noteName != null) {
                     noteName = noteName.trim();
-                    if (!noteName.isEmpty() && !noteName.equals("NULL")) {
+                    if (!noteName.isEmpty() && !noteName.equals("NULL")
+                            && !hiddenNoteIds.contains(String.valueOf(cursor.getInt(0)))) {
                         noteIds.add(cursor.getInt(0));
                     }
                 }
