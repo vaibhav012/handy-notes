@@ -93,7 +93,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                     noteIdList.add(target, noteId);
                     noteNameList.add(target, mydb.getNoteName(noteId));
                     String content = mydb.getNote(noteId);
-                    notePreviewList.add(target, content == null ? "" : content.trim().replaceAll("\\s+", " "));
+                    notePreviewList.add(target, RichNoteEditor.preview(content));
                     saveNoteOrder(noteIdList);
                     noteListView.setAdapter(new CustomAdapter(this, noteIdList, noteNameList, notePreviewList));
                 }
@@ -258,7 +258,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                                 noteIdList.add(noteId);
                                 noteNameList.add(noteName);
                                 String noteContent = cursor.getString(2);
-                                notePreviewList.add(noteContent == null ? "" : noteContent.trim().replaceAll("\\s+", " "));
+                                notePreviewList.add(RichNoteEditor.preview(noteContent));
                             }
                         }
                     } while (cursor.moveToNext());
@@ -371,3 +371,4 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     }
 
 }
+

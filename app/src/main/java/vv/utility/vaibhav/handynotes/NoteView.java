@@ -29,7 +29,7 @@ public class NoteView extends AppCompatActivity {
 
     private int noteId = 0;
     private DBHelper mydb;
-    private EditText noteNote;
+    private RichNoteEditor noteNote;
     private EditText noteName;
     private SwitchCompat onlineSyncSwitch;
     private TextView syncStatusText;
@@ -61,7 +61,7 @@ public class NoteView extends AppCompatActivity {
         noteId = isNewNote ? mydb.createNoteId() : Integer.parseInt(intent.getStringExtra("noteId"));
 
         noteName = (EditText) findViewById(R.id.noteName);
-        noteNote = (EditText) findViewById(R.id.noteNote);
+        noteNote = (RichNoteEditor) findViewById(R.id.noteNote);
         TextView dateAndTime = (TextView) findViewById(R.id.dateAndTime);
         onlineSyncSwitch = (SwitchCompat) findViewById(R.id.onlineSyncSwitch);
         syncStatusText = (TextView) findViewById(R.id.syncStatusText);
@@ -73,7 +73,7 @@ public class NoteView extends AppCompatActivity {
         noteName.setText(originalNoteName);
         
         originalNoteText = isNewNote ? "" : mydb.getNote(noteId).trim();
-        noteNote.setText(originalNoteText);
+        noteNote.setContent(originalNoteText);
         dateAndTime.setText(isNewNote ? "New note" : formatDateTime(mydb.getDateTime(noteId).trim()));
 
         // Set online sync status
@@ -126,8 +126,7 @@ public class NoteView extends AppCompatActivity {
             }
         });
 
-        noteNote.requestFocus();
-        noteNote.setSelection(noteNote.getText().length());
+        noteNote.requestEditorFocus();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
         Button saveButton = (Button) findViewById(R.id.saveButton);
@@ -152,7 +151,7 @@ public class NoteView extends AppCompatActivity {
                 }
                 if (result.content != null && !result.content.equals(originalNoteText)) {
                     originalNoteText = result.content;
-                    noteNote.setText(result.content);
+                    noteNote.setContent(result.content);
                     hasChanges = true;
                 }
 
@@ -174,7 +173,7 @@ public class NoteView extends AppCompatActivity {
 
     private void activateOnlineSync() {
         final String currentTitle = noteName.getText().toString().trim();
-        final String currentContent = noteNote.getText().toString().trim();
+        final String currentContent = noteNote.getContent().trim();
         String existingOnlineId = mydb.getOnlineId(noteId);
 
         syncStatusText.setVisibility(View.VISIBLE);
@@ -402,7 +401,7 @@ public class NoteView extends AppCompatActivity {
     }
 
     private void saveNote() {
-        String noteText = noteNote.getText().toString().trim();
+        String noteText = noteNote.getContent().trim();
         String newNoteName = noteName.getText().toString().trim();
 
         if (isNewNote && noteText.isEmpty() && newNoteName.isEmpty()) {
@@ -505,7 +504,7 @@ public class NoteView extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        String currentText = noteNote.getText().toString().trim();
+        String currentText = noteNote.getContent().trim();
         String currentName = noteName.getText().toString().trim();
         if (!currentText.equals(originalNoteText) || !currentName.equals(originalNoteName)) {
             finish();
@@ -528,3 +527,5 @@ public class NoteView extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 }
+
+

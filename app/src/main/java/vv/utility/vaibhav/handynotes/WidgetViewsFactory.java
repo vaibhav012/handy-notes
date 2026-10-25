@@ -44,7 +44,7 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
     public RemoteViews getViewAt(int position) {
         RemoteViews row=new RemoteViews(ctxt.getPackageName(), R.layout.widget_row);
 
-        row.setTextViewText(android.R.id.text1, items[position]);
+        row.setTextViewText(android.R.id.text1, RichNoteEditor.renderMarkdown(items[position]));
 
         if (noteId > 0) {
             Intent i=new Intent();

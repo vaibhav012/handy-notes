@@ -43,21 +43,12 @@
 
         </LinearLayout>
 
-        <EditText
+        <vv.utility.vaibhav.handynotes.RichNoteEditor
             android:id="@+id/widgetText"
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:layout_marginBottom="16dp"
-            android:background="@drawable/rounded_edittext"
-            android:gravity="top|start"
-            android:hint="Enter your note text..."
-            android:inputType="textMultiLine|textCapSentences"
-            android:maxLines="12"
-            android:minLines="6"
-            android:padding="14dp"
-            android:textColor="@color/on_background"
-            android:textColorHint="@color/outline"
-            android:textSize="15sp" />
+            android:background="@drawable/rounded_edittext" />
 
         <LinearLayout
             android:id="@+id/widgetEditorFooter"

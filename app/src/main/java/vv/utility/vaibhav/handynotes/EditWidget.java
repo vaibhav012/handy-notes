@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -69,18 +68,12 @@ public class EditWidget extends AppCompatActivity {
 
         Button cancel = findViewById(R.id.cancel);
         Button update = findViewById(R.id.update);
-        final EditText widgetText = findViewById(R.id.widgetText);
+        final RichNoteEditor widgetText = findViewById(R.id.widgetText);
         TextView noteTitle = findViewById(R.id.widgetEditorNoteTitle);
         ProgressBar refreshSpinner = findViewById(R.id.noteRefreshSpinner);
         final boolean[] userEdited = {false};
         final boolean[] loadingLocalNote = {true};
-        widgetText.addTextChangedListener(new android.text.TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (!loadingLocalNote[0]) userEdited[0] = true;
-            }
-            @Override public void afterTextChanged(android.text.Editable s) { }
-        });
+        widgetText.setOnContentChangedListener(markdown -> { if (!loadingLocalNote[0]) userEdited[0] = true; });
 
         noteTitle.setOnClickListener(v -> openNoteInApp());
 
@@ -88,7 +81,7 @@ public class EditWidget extends AppCompatActivity {
             String title = mydb.getNoteName(noteId);
             noteTitle.setText(title == null || title.trim().isEmpty() || title.equals("NULL") ? "Untitled Note" : title.trim());
             String noteContent = mydb.getNote(noteId);
-            widgetText.setText(noteContent);
+            widgetText.setContent(noteContent);
             loadingLocalNote[0] = false;
 
             // Refetch in background if note is online
@@ -120,8 +113,8 @@ public class EditWidget extends AppCompatActivity {
                                 return;
                             }
                             if (!userEdited[0] && currentNote.content != null) {
-                                widgetText.setText(currentNote.content);
-                                widgetText.setSelection(widgetText.getText().length());
+                                widgetText.setContent(currentNote.content);
+                                widgetText.requestEditorFocus();
                             }
                             if (currentNote.title != null && !currentNote.title.trim().isEmpty()) {
                                 noteTitle.setText(currentNote.title.trim());
@@ -137,8 +130,7 @@ public class EditWidget extends AppCompatActivity {
             }
         }
 
-        widgetText.requestFocus();
-        widgetText.setSelection(widgetText.getText().length());
+        widgetText.requestEditorFocus();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 
         cancel.setOnClickListener(v -> finish());
@@ -154,6 +146,7 @@ public class EditWidget extends AppCompatActivity {
         noteBrowseBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && progress >= 0 && progress < browseNoteIds.size()) {
+                    userEdited[0] = false;
                     selectBrowseNote(browseNoteIds.get(progress), widgetText, noteTitle, notesNeedingOnlineSync);
                 }
             }
@@ -171,7 +164,7 @@ public class EditWidget extends AppCompatActivity {
         });
 
         update.setOnClickListener(v -> {
-            String newText = widgetText.getText().toString().trim();
+            String newText = widgetText.getContent().trim();
             String noteName = "";
             boolean isOnline = false;
             String onlineId = "";
@@ -220,14 +213,14 @@ public class EditWidget extends AppCompatActivity {
         return noteIds;
     }
 
-    private void selectBrowseNote(int destinationNoteId, EditText widgetText, TextView noteTitle,
+    private void selectBrowseNote(int destinationNoteId, RichNoteEditor widgetText, TextView noteTitle,
                                   ArrayList<Integer> notesNeedingOnlineSync) {
         if (destinationNoteId == noteId) return;
         String currentTitle;
         boolean currentIsOnline;
         try (DBHelper db = new DBHelper(this)) {
             currentTitle = db.getNoteName(noteId);
-            db.updateNote(noteId, currentTitle, widgetText.getText().toString());
+            db.updateNote(noteId, currentTitle, widgetText.getContent());
             currentIsOnline = db.isNoteOnline(noteId);
         }
         if (currentIsOnline && !notesNeedingOnlineSync.contains(noteId)) notesNeedingOnlineSync.add(noteId);
@@ -237,8 +230,8 @@ public class EditWidget extends AppCompatActivity {
             String title = db.getNoteName(noteId);
             noteTitle.setText(title == null || title.trim().isEmpty() || title.equals("NULL")
                     ? "Untitled Note" : title.trim());
-            widgetText.setText(db.getNote(noteId));
-            widgetText.setSelection(widgetText.getText().length());
+            widgetText.setContent(db.getNote(noteId));
+            widgetText.requestEditorFocus();
         }
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             PreferenceManager.getDefaultSharedPreferences(this).edit()
