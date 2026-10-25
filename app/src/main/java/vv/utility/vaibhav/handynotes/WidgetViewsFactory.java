@@ -16,7 +16,7 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
         noteId = intent.getIntExtra("noteId", -1);
         String noteText = intent.getStringExtra("text");
         if (noteId <= 0) {
-            items = new String[]{"No notes selected. Long-press a note in the app to show it here."};
+            items = new String[]{"Tap here to create your Default Note."};
         } else if (noteText != null && !noteText.isEmpty()) {
             // Display full text as a single item
             items = new String[]{noteText};
@@ -46,13 +46,13 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
 
         row.setTextViewText(android.R.id.text1, RichNoteEditor.renderMarkdown(items[position]));
 
+        Intent i=new Intent();
+        Bundle extras=new Bundle();
         if (noteId > 0) {
-            Intent i=new Intent();
-            Bundle extras=new Bundle();
             extras.putString("noteText", items[position]);
-            i.putExtras(extras);
-            row.setOnClickFillInIntent(android.R.id.text1, i);
         }
+        i.putExtras(extras);
+        row.setOnClickFillInIntent(android.R.id.text1, i);
 
         return(row);
     }

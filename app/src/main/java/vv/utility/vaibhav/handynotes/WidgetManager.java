@@ -39,6 +39,43 @@ public class WidgetManager extends AppWidgetProvider {
         prefs.edit().putStringSet(PREF_HIDDEN_NOTE_IDS, hidden).apply();
     }
 
+    /** Selects the first visible note, or creates a starter note when the widget has none to show. */
+    public static int getOrCreateDefaultNote(Context context) {
+        int existingNoteId = -1;
+        Set<String> hidden = PreferenceManager.getDefaultSharedPreferences(context)
+                .getStringSet(PREF_HIDDEN_NOTE_IDS, java.util.Collections.emptySet());
+        try (DBHelper db = new DBHelper(context);
+             Cursor cursor = db.getReadableDatabase().rawQuery(
+                     "SELECT " + DBHelper.NOTE_ID + ", " + DBHelper.NOTE_NAME + " FROM "
+                             + DBHelper.NOTES_TABLE_NAME + " ORDER BY " + DBHelper.NOTE_ID, null)) {
+            while (cursor.moveToNext()) {
+                String name = cursor.getString(1);
+                int id = cursor.getInt(0);
+                if (name != null && !name.trim().isEmpty() && !name.equals("NULL")
+                        && !hidden.contains(String.valueOf(id))) {
+                    existingNoteId = id;
+                    break;
+                }
+            }
+        }
+
+        if (existingNoteId > 0) {
+            PreferenceManager.getDefaultSharedPreferences(context).edit()
+                    .putInt(PREF_DEFAULT_NOTE_ID, existingNoteId).apply();
+            return existingNoteId;
+        }
+
+        int noteId;
+        try (DBHelper db = new DBHelper(context)) {
+            noteId = db.createNoteId();
+            db.addNote(noteId, "Default Note", "");
+        }
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putInt(PREF_DEFAULT_NOTE_ID, noteId).apply();
+        setNoteHidden(context, noteId, false);
+        return noteId;
+    }
+
     public static void remapNotePreferencesAfterDeletion(Context context, int deletedNoteId) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = prefs.edit();
@@ -135,7 +172,11 @@ public class WidgetManager extends AppWidgetProvider {
                             editor.putInt("widget_note_" + appWidgetId, currentNoteId);
                             editor.commit();
                         } else {
-                            // No notes available, skip update
+                            currentNoteId = getOrCreateDefaultNote(context);
+                            if (currentNoteId <= 0) return;
+                            prefs.edit().putInt("widget_note_" + appWidgetId, currentNoteId).commit();
+                            AppWidgetManager manager = AppWidgetManager.getInstance(context);
+                            updateWidgetDirectly(context, manager, appWidgetId, currentNoteId);
                             return;
                         }
                     }
@@ -198,6 +239,14 @@ public class WidgetManager extends AppWidgetProvider {
 
     private void setupWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, int noteId, Intent svcIntent) {
         RemoteViews widget = new RemoteViews(context.getPackageName(), R.layout.widget_layout);
+        int visibleNoteCount;
+        try (DBHelper dbHelper = new DBHelper(context)) {
+            visibleNoteCount = getAllNoteIds(context, dbHelper).size();
+        }
+        int navigationVisibility = visibleNoteCount == 1 ? android.view.View.GONE : android.view.View.VISIBLE;
+        widget.setViewVisibility(R.id.prevNoteButton, navigationVisibility);
+        widget.setViewVisibility(R.id.nextNoteButton, navigationVisibility);
+        widget.setViewVisibility(R.id.openDefaultNoteButton, navigationVisibility);
 
         Log.d("WidgetManager", "Setting up widget for noteId: " + noteId);
 
@@ -244,11 +293,10 @@ public class WidgetManager extends AppWidgetProvider {
         Intent clickIntent = new Intent(context, EditWidget.class);
         clickIntent.putExtra("noteId", noteId);
         clickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        if (noteId <= 0) clickIntent.putExtra("openDefaultNote", true);
         // Use unique request code per widget to avoid conflicts between multiple widgets
         PendingIntent clickPI = PendingIntent.getActivity(context, appWidgetId * 10, clickIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        if (noteId > 0) {
-            widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
-        }
+        widget.setPendingIntentTemplate(R.id.widgetListView, clickPI);
 
         if (noteId > 0 && !noteName.isEmpty()) {
             Intent openNoteIntent = new Intent(context, NoteView.class);

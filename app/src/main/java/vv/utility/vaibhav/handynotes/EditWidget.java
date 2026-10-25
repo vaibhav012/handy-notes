@@ -39,9 +39,11 @@ public class EditWidget extends AppCompatActivity {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             int defaultNoteId = prefs.getInt(WidgetManager.PREF_DEFAULT_NOTE_ID, -1);
             if (defaultNoteId == -1) {
-                android.widget.Toast.makeText(this, "Set a default note from the note editor first.", android.widget.Toast.LENGTH_SHORT).show();
-                finish();
-                return;
+                defaultNoteId = WidgetManager.getOrCreateDefaultNote(this);
+                if (defaultNoteId == -1) {
+                    finish();
+                    return;
+                }
             }
 
             boolean defaultNoteExists;
@@ -53,9 +55,11 @@ public class EditWidget extends AppCompatActivity {
             }
             if (!defaultNoteExists) {
                 prefs.edit().remove(WidgetManager.PREF_DEFAULT_NOTE_ID).apply();
-                android.widget.Toast.makeText(this, "The default note no longer exists. Choose a new one in the app.", android.widget.Toast.LENGTH_LONG).show();
-                finish();
-                return;
+                defaultNoteId = WidgetManager.getOrCreateDefaultNote(this);
+                if (defaultNoteId == -1) {
+                    finish();
+                    return;
+                }
             }
 
             noteId = defaultNoteId;
