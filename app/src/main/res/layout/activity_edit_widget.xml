@@ -41,6 +41,16 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
+            <ProgressBar
+                android:id="@+id/noteRefreshSpinner"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                android:contentDescription="Refreshing note" />
+
         </LinearLayout>
 
         <vv.utility.vaibhav.handynotes.RichNoteEditor
@@ -100,16 +110,5 @@
         </LinearLayout>
 
     </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/noteRefreshSpinner"
-        style="?android:attr/progressBarStyleSmall"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:indeterminate="true"
-        android:visibility="gone"
-        android:contentDescription="Refreshing note" />
 
 </RelativeLayout>

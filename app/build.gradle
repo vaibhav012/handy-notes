@@ -23,8 +23,8 @@ android {
         applicationId 'vv.utility.vaibhav.handynotes'
         minSdk 31
         targetSdk 36
-        versionCode 16
-        versionName '1.4.4'
+        versionCode 17
+        versionName '1.4.5'
     }
 
     buildTypes {

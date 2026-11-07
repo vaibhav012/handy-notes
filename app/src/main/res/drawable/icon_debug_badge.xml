@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <!-- White outer border for contrast on any background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,1a15,15 0,1 0,0 30a15,15 0,1 0,0 -30z" />
+    <!-- Material Red badge background -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M16,2.5a13.5,13.5 0,1 0,0 27a13.5,13.5 0,1 0,0 -27z" />
+    <!-- Clean, typographically proportional filled 'D' -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M11,9.5 h4.5 C18.1,9.5 21,12.4 21,16 C21,19.6 18.1,22.5 14.5,22.5 H11 Z M13.8,12 v8 h1 C15.8,20 18.2,18.2 18.2,16 C18.2,13.8 15.8,12 14.8,12 Z" />
+</vector>

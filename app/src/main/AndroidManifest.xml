@@ -28,6 +28,7 @@
             android:name=".NoteView"
             android:parentActivityName=".Home"
             android:label="Note"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/AppTheme.NoActionBar" >
         </activity>
 

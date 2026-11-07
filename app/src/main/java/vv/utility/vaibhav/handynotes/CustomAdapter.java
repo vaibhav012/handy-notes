@@ -1,5 +1,6 @@
 package vv.utility.vaibhav.handynotes;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -99,11 +100,10 @@ public class CustomAdapter extends BaseAdapter {
             }
         }
 
-        try (DBHelper dbHelper = new DBHelper(context)) {
-            boolean isOnline = dbHelper.isNoteOnline(currentNoteId);
-            if (holder.onlineCloudBadge != null) {
-                holder.onlineCloudBadge.setVisibility(isOnline ? View.VISIBLE : View.GONE);
-            }
+        DBHelper dbHelper = new DBHelper(context);
+        boolean isOnline = dbHelper.isNoteOnline(currentNoteId);
+        if (holder.onlineCloudBadge != null) {
+            holder.onlineCloudBadge.setVisibility(isOnline ? View.VISIBLE : View.GONE);
         }
 
         View noteButton = convertView.findViewById(R.id.noteButton);
@@ -111,7 +111,7 @@ public class CustomAdapter extends BaseAdapter {
         if (dragHandle != null) {
             dragHandle.setOnTouchListener((v, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    android.content.ClipData data = android.content.ClipData.newPlainText("noteId", String.valueOf(currentNoteId));
+                    ClipData data = ClipData.newPlainText("noteId", String.valueOf(currentNoteId));
                     View row = (View) v.getParent().getParent();
                     row.setAlpha(0.55f);
                     boolean started = v.startDragAndDrop(data, new View.DragShadowBuilder(row), null, 0);

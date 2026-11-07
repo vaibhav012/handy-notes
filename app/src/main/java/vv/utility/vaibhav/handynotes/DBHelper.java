@@ -71,7 +71,6 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(IS_ONLINE_COLUMN, isOnline ? 1 : 0);
         values.put(ONLINE_ID_COLUMN, onlineId != null ? onlineId : "");
         db.insert(NOTES_TABLE_NAME, null, values);
-        db.close();
     }
 
     public int createNoteId() {
@@ -226,7 +225,6 @@ public class DBHelper extends SQLiteOpenHelper {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
-            db.close();
         }
     }
 
@@ -254,12 +252,11 @@ public class DBHelper extends SQLiteOpenHelper {
             return deleted;
         } finally {
             db.endTransaction();
-            db.close();
         }
     }
 
     public void deleteNote(int noteId){
-        SQLiteDatabase db = this.getReadableDatabase();
+        SQLiteDatabase db = this.getWritableDatabase();
         for(int i = noteId; i < createNoteId() - 1; i++){
             ContentValues values = new ContentValues();
             values.put(NOTE_NAME, getNoteName(i + 1));
@@ -273,7 +270,7 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public void updateNote(int noteId, String noteName, String note){
-        SQLiteDatabase db = this.getReadableDatabase();
+        SQLiteDatabase db = this.getWritableDatabase();
 
         Calendar calendar = Calendar.getInstance();
         String dateAndTime = "Date : "+calendar.get(Calendar.DATE)+"/"+calendar.get(Calendar.MONTH)+"/"+calendar.get(Calendar.YEAR)+
@@ -318,7 +315,6 @@ public class DBHelper extends SQLiteOpenHelper {
                 cursor.close();
             }
         }
-        db.close();
         return notes;
     }
 
@@ -336,15 +332,12 @@ public class DBHelper extends SQLiteOpenHelper {
             values.put(ONLINE_ID_COLUMN, note.getOnlineId());
             db.insert(NOTES_TABLE_NAME, null, values);
         }
-        
-        db.close();
     }
 
     // Clear all notes (useful before import)
     public void clearAllNotes() {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(NOTES_TABLE_NAME, null, null);
-        db.close();
     }
 
     // Note data class

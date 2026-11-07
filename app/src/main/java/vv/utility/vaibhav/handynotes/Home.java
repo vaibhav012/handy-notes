@@ -20,6 +20,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Home extends AppCompatActivity implements CustomAdapter.TalkToActivity{
 
@@ -267,7 +268,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             }
         } else {
             noNote.setVisibility(View.VISIBLE);
-            addNote.setVisibility(View.GONE);
+            if (addNote != null) addNote.setVisibility(View.GONE);
             noteIdList.clear();
             noteNameList.clear();
             notePreviewList.clear();
@@ -321,11 +322,12 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         SupabaseAuthManager.getSignedInEmail(this, new SupabaseAuthManager.Callback() {
             @Override
             public void onSuccess(String email) {
-                if (email == null || email.isEmpty() || isFinishing()) return;
-                ApiService.fetchOnlineNotes(Home.this, new ApiService.ApiCallback<java.util.List<ApiService.ServerNote>>() {
+                if (email == null || email.isEmpty() || isFinishing() || isDestroyed()) return;
+                ApiService.fetchOnlineNotes(Home.this, new ApiService.ApiCallback<List<ApiService.ServerNote>>() {
                     @Override
-                    public void onSuccess(java.util.List<ApiService.ServerNote> notes) {
-                        java.util.ArrayList<String> serverOnlineIds = new java.util.ArrayList<>();
+                    public void onSuccess(List<ApiService.ServerNote> notes) {
+                        if (isFinishing() || isDestroyed()) return;
+                        ArrayList<String> serverOnlineIds = new ArrayList<>();
                         try (DBHelper db = new DBHelper(Home.this)) {
                             for (ApiService.ServerNote note : notes) {
                                 db.upsertOnlineNote(note.onlineId, note.title, note.content);

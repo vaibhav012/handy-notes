@@ -33,6 +33,9 @@ public class NoteView extends AppCompatActivity {
     private EditText noteName;
     private SwitchCompat onlineSyncSwitch;
     private TextView syncStatusText;
+    private Button saveButton;
+    private boolean serverFetchInProgress;
+    private boolean serverUpdateInProgress;
     private String originalNoteText;
     private String originalNoteName;
     private boolean isUpdatingSwitch = false;
@@ -40,6 +43,7 @@ public class NoteView extends AppCompatActivity {
     private static final int REQUEST_PICK_ATTACHMENT = 4102;
     private LinearLayout attachmentList;
     private TextView attachmentStatus;
+    private View attachmentScroll;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +71,7 @@ public class NoteView extends AppCompatActivity {
         syncStatusText = (TextView) findViewById(R.id.syncStatusText);
         attachmentList = findViewById(R.id.attachmentList);
         attachmentStatus = findViewById(R.id.attachmentStatus);
+        attachmentScroll = findViewById(R.id.attachmentScroll);
         findViewById(R.id.addAttachmentButton).setOnClickListener(v -> pickAttachment());
 
         originalNoteName = isNewNote ? "" : mydb.getNoteName(noteId).trim();
@@ -127,9 +132,11 @@ public class NoteView extends AppCompatActivity {
         });
 
         noteNote.requestEditorFocus();
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
-        Button saveButton = (Button) findViewById(R.id.saveButton);
+        saveButton = (Button) findViewById(R.id.saveButton);
+        updateSaveEnabledState();
         saveButton.setOnClickListener(v -> saveNote());
 
         Button cancelButton = (Button) findViewById(R.id.cancelButton);
@@ -137,12 +144,17 @@ public class NoteView extends AppCompatActivity {
     }
 
     private void refetchOnlineNote(final String onlineId) {
+        serverFetchInProgress = true;
+        updateSaveEnabledState();
+        noteName.setEnabled(false);
+        noteNote.setEnabled(false);
         syncStatusText.setVisibility(View.VISIBLE);
         syncStatusText.setText("Refetching note from server...");
 
         ApiService.fetchOnlineNote(this, onlineId, new ApiService.ApiCallback<ApiService.NoteSyncResult>() {
             @Override
             public void onSuccess(ApiService.NoteSyncResult result) {
+                serverFetchInProgress = false;
                 boolean hasChanges = false;
                 if (result.title != null && !result.title.isEmpty() && !result.title.equals(originalNoteName)) {
                     originalNoteName = result.title;
@@ -162,13 +174,24 @@ public class NoteView extends AppCompatActivity {
                 } else {
                     syncStatusText.setText("Up to date with server");
                 }
+                updateSaveEnabledState();
+                noteName.setEnabled(true);
+                noteNote.setEnabled(true);
             }
 
             @Override
             public void onError(String errorMessage) {
+                serverFetchInProgress = false;
                 syncStatusText.setText("Offline (Server fetch error)");
+                updateSaveEnabledState();
+                noteName.setEnabled(true);
+                noteNote.setEnabled(true);
             }
         });
+    }
+
+    private void updateSaveEnabledState() {
+        if (saveButton != null) saveButton.setEnabled(!serverFetchInProgress && !serverUpdateInProgress);
     }
 
     private void activateOnlineSync() {
@@ -213,10 +236,6 @@ public class NoteView extends AppCompatActivity {
             Toast.makeText(this, "Enable Online Sync before attaching files", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (isNewNote) {
-            onlineSyncSwitch.setVisibility(View.GONE);
-            findViewById(R.id.attachmentsPanel).setVisibility(View.GONE);
-        }
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -234,6 +253,7 @@ public class NoteView extends AppCompatActivity {
         }
         Uri fileUri = data.getData();
         attachmentStatus.setText("Uploading file…");
+        attachmentStatus.setVisibility(View.VISIBLE);
         findViewById(R.id.addAttachmentButton).setEnabled(false);
         ApiService.uploadNoteAttachment(this, onlineId, fileUri, new ApiService.ApiCallback<Boolean>() {
             @Override
@@ -247,6 +267,7 @@ public class NoteView extends AppCompatActivity {
             public void onError(String errorMessage) {
                 findViewById(R.id.addAttachmentButton).setEnabled(true);
                 attachmentStatus.setText(errorMessage);
+                attachmentStatus.setVisibility(View.VISIBLE);
                 Toast.makeText(NoteView.this, errorMessage, Toast.LENGTH_LONG).show();
             }
         });
@@ -254,25 +275,33 @@ public class NoteView extends AppCompatActivity {
 
     private void refreshAttachments(String onlineId) {
         if (onlineId == null || onlineId.isEmpty()) {
-            attachmentStatus.setText("Enable Online Sync to attach files");
+            attachmentList.removeAllViews();
+            attachmentStatus.setVisibility(View.GONE);
+            attachmentScroll.setVisibility(View.GONE);
             return;
         }
         attachmentStatus.setText("Loading files…");
+        attachmentStatus.setVisibility(View.VISIBLE);
+        attachmentScroll.setVisibility(View.GONE);
         ApiService.fetchNoteAttachments(this, onlineId, new ApiService.ApiCallback<java.util.List<ApiService.NoteAttachment>>() {
             @Override
             public void onSuccess(java.util.List<ApiService.NoteAttachment> attachments) {
                 attachmentList.removeAllViews();
                 if (attachments.isEmpty()) {
-                    attachmentStatus.setText("No files attached");
+                    attachmentStatus.setVisibility(View.GONE);
+                    attachmentScroll.setVisibility(View.GONE);
                     return;
                 }
                 attachmentStatus.setText(attachments.size() + (attachments.size() == 1 ? " file" : " files"));
                 for (ApiService.NoteAttachment attachment : attachments) addAttachmentRow(onlineId, attachment);
+                attachmentStatus.setVisibility(View.VISIBLE);
+                attachmentScroll.setVisibility(View.VISIBLE);
             }
 
             @Override
             public void onError(String errorMessage) {
                 attachmentStatus.setText(errorMessage);
+                attachmentStatus.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -414,38 +443,57 @@ public class NoteView extends AppCompatActivity {
             noteName.setText(newNoteName);
         }
         
-        if (isNewNote) {
-            if (newNoteName.isEmpty()) newNoteName = noteText.isEmpty() ? "Untitled Note" : noteText;
-            mydb.addNote(noteId, newNoteName, noteText);
-            isNewNote = false;
-        } else {
-            mydb.updateNote(noteId, newNoteName, noteText);
-        }
-        originalNoteText = noteText;
-        originalNoteName = newNoteName;
+        if (isNewNote && newNoteName.isEmpty()) newNoteName = noteText.isEmpty() ? "Untitled Note" : noteText;
 
-        if (mydb.isNoteOnline(noteId)) {
+        if (!isNewNote && mydb.isNoteOnline(noteId)) {
             String onlineId = mydb.getOnlineId(noteId);
             if (!onlineId.isEmpty()) {
+                final String titleToSave = newNoteName;
+                final String contentToSave = noteText;
+                serverUpdateInProgress = true;
+                updateSaveEnabledState();
+                noteName.setEnabled(false);
+                noteNote.setEnabled(false);
                 syncStatusText.setVisibility(View.VISIBLE);
                 syncStatusText.setText("Updating note on server...");
-                ApiService.updateOnlineNote(this, onlineId, newNoteName, noteText, new ApiService.ApiCallback<Boolean>() {
+                ApiService.updateOnlineNote(this, onlineId, titleToSave, contentToSave, new ApiService.ApiCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean result) {
+                        mydb.updateNote(noteId, titleToSave, contentToSave);
+                        originalNoteText = contentToSave;
+                        originalNoteName = titleToSave;
+                        serverUpdateInProgress = false;
                         Toast.makeText(NoteView.this, "Saved locally and on server", Toast.LENGTH_SHORT).show();
+                        updateWidget();
+                        finish();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
-                        Toast.makeText(NoteView.this, "Saved locally. Server update failed: " + errorMessage, Toast.LENGTH_LONG).show();
+                        serverUpdateInProgress = false;
+                        syncStatusText.setText("Server update failed; your edits are still here");
+                        updateSaveEnabledState();
+                        noteName.setEnabled(true);
+                        noteNote.setEnabled(true);
+                        Toast.makeText(NoteView.this, "Server update failed; edits remain unsaved locally. " + errorMessage, Toast.LENGTH_LONG).show();
                     }
                 });
+                return;
             } else {
-                activateOnlineSync();
+                mydb.updateNote(noteId, newNoteName, noteText);
             }
         } else {
-            Toast.makeText(this, "Note saved locally", Toast.LENGTH_SHORT).show();
+            if (isNewNote) {
+                mydb.addNote(noteId, newNoteName, noteText);
+                isNewNote = false;
+            } else {
+                mydb.updateNote(noteId, newNoteName, noteText);
+            }
         }
+
+        originalNoteText = noteText;
+        originalNoteName = newNoteName;
+        Toast.makeText(this, "Note saved locally", Toast.LENGTH_SHORT).show();
         
         updateWidget();
         finish();

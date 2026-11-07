@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import java.util.ArrayList;
@@ -121,10 +122,10 @@ public class WidgetManager extends AppWidgetProvider {
                         // Update the preference to reflect the selection
                         SharedPreferences.Editor editor = prefs.edit();
                         editor.putInt("widget_note_" + appWidgetIds[i], selectedNoteId);
-                        editor.apply();
+                        editor.commit();
                     } else {
                         selectedNoteId = -1;
-                        prefs.edit().putInt("widget_note_" + appWidgetIds[i], selectedNoteId).apply();
+                        prefs.edit().putInt("widget_note_" + appWidgetIds[i], selectedNoteId).commit();
                     }
                 }
             
@@ -243,7 +244,7 @@ public class WidgetManager extends AppWidgetProvider {
         try (DBHelper dbHelper = new DBHelper(context)) {
             visibleNoteCount = getAllNoteIds(context, dbHelper).size();
         }
-        int navigationVisibility = visibleNoteCount == 1 ? android.view.View.GONE : android.view.View.VISIBLE;
+        int navigationVisibility = visibleNoteCount <= 1 ? View.GONE : View.VISIBLE;
         widget.setViewVisibility(R.id.prevNoteButton, navigationVisibility);
         widget.setViewVisibility(R.id.nextNoteButton, navigationVisibility);
         widget.setViewVisibility(R.id.openDefaultNoteButton, navigationVisibility);
@@ -333,7 +334,7 @@ public class WidgetManager extends AppWidgetProvider {
         
         // Update the widget - this updates both the note name and triggers the adapter refresh
         appWidgetManager.updateAppWidget(appWidgetId, widget);
-        
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widgetListView);
     }
 
     private int getNextNoteId(Context context, DBHelper dbHelper, int currentNoteId) {

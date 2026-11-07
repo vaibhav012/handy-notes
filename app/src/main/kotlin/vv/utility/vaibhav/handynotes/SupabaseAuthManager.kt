@@ -180,27 +180,41 @@ private class AndroidSecureSessionManager(context: Context) : SessionManager {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
     override suspend fun saveSession(session: UserSession) {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
-        val encrypted = cipher.doFinal(json.encodeToString(UserSession.serializer(), session).toByteArray(Charsets.UTF_8))
-        val stored = cipher.iv + encrypted
-        preferences.edit().putString(SESSION_KEY, Base64.encodeToString(stored, Base64.NO_WRAP)).apply()
+        try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+            val encrypted = cipher.doFinal(json.encodeToString(UserSession.serializer(), session).toByteArray(Charsets.UTF_8))
+            val stored = cipher.iv + encrypted
+            preferences.edit().putString(SESSION_KEY, Base64.encodeToString(stored, Base64.NO_WRAP)).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save secure session", e)
+        }
     }
 
     override suspend fun loadSession(): UserSession? {
-        val storedText = preferences.getString(SESSION_KEY, null) ?: return null
-        val stored = Base64.decode(storedText, Base64.NO_WRAP)
-        if (stored.size <= IV_LENGTH) return null
-        val iv = stored.copyOfRange(0, IV_LENGTH)
-        val encrypted = stored.copyOfRange(IV_LENGTH, stored.size)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
-        val sessionJson = cipher.doFinal(encrypted).toString(Charsets.UTF_8)
-        return json.decodeFromString(UserSession.serializer(), sessionJson)
+        return try {
+            val storedText = preferences.getString(SESSION_KEY, null) ?: return null
+            val stored = Base64.decode(storedText, Base64.NO_WRAP)
+            if (stored.size <= IV_LENGTH) return null
+            val iv = stored.copyOfRange(0, IV_LENGTH)
+            val encrypted = stored.copyOfRange(IV_LENGTH, stored.size)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
+            val sessionJson = cipher.doFinal(encrypted).toString(Charsets.UTF_8)
+            json.decodeFromString(UserSession.serializer(), sessionJson)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load secure session; resetting corrupted session", e)
+            deleteSession()
+            null
+        }
     }
 
     override suspend fun deleteSession() {
-        preferences.edit().remove(SESSION_KEY).apply()
+        try {
+            preferences.edit().remove(SESSION_KEY).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete secure session", e)
+        }
     }
 
     private fun getOrCreateKey(): SecretKey {
@@ -219,6 +233,7 @@ private class AndroidSecureSessionManager(context: Context) : SessionManager {
     }
 
     private companion object {
+        const val TAG = "AndroidSecureSessionManager"
         const val ANDROID_KEYSTORE = "AndroidKeyStore"
         const val KEY_ALIAS = "handy_notes_supabase_session_key"
         const val SESSION_KEY = "encrypted_session"

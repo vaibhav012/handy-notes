@@ -79,7 +79,8 @@
         android:layout_below="@+id/linearLayout"
         android:background="@android:color/transparent"
         android:divider="@null"
-        android:dividerHeight="0dp" />
+        android:dividerHeight="0dp"
+        android:paddingBottom="24dp" />
 
     <ImageView
         android:id="@+id/widgetBrandMark"
