@@ -78,6 +78,7 @@ public class EditWidget extends AppCompatActivity {
         final RichNoteEditor widgetText = findViewById(R.id.widgetText);
         TextView noteTitle = findViewById(R.id.widgetEditorNoteTitle);
         ProgressBar refreshSpinner = findViewById(R.id.noteRefreshSpinner);
+        ProgressBar updateSpinner = findViewById(R.id.updateSpinner);
         SeekBar noteBrowseBar = findViewById(R.id.noteBrowseBar);
         final boolean[] serverFetchInProgress = {false};
         final boolean[] userEdited = {false};
@@ -99,6 +100,7 @@ public class EditWidget extends AppCompatActivity {
                 if (!onlineId.isEmpty()) {
                     serverFetchInProgress[0] = true;
                     update.setEnabled(false);
+                    update.setText("Loading…");
                     noteBrowseBar.setEnabled(false);
                     widgetText.setEnabled(false);
                     refreshSpinner.setVisibility(View.VISIBLE);
@@ -134,6 +136,7 @@ public class EditWidget extends AppCompatActivity {
                                 noteTitle.setText(currentNote.title.trim());
                             }
                             update.setEnabled(true);
+                            update.setText("Update");
                             noteBrowseBar.setEnabled(true);
                             widgetText.setEnabled(true);
                         }
@@ -143,6 +146,7 @@ public class EditWidget extends AppCompatActivity {
                             serverFetchInProgress[0] = false;
                             refreshSpinner.setVisibility(View.GONE);
                             update.setEnabled(true);
+                            update.setText("Update");
                             noteBrowseBar.setEnabled(true);
                             widgetText.setEnabled(true);
                         }
@@ -199,6 +203,8 @@ public class EditWidget extends AppCompatActivity {
                 final String titleToSave = noteName;
                 final String contentToSave = newText;
                 update.setEnabled(false);
+                update.setText("Saving…");
+                updateSpinner.setVisibility(View.VISIBLE);
                 noteBrowseBar.setEnabled(false);
                 widgetText.setEnabled(false);
                 ApiService.updateOnlineNote(EditWidget.this, onlineId, titleToSave, contentToSave, new ApiService.ApiCallback<Boolean>() {
@@ -207,6 +213,7 @@ public class EditWidget extends AppCompatActivity {
                         try (DBHelper db = new DBHelper(EditWidget.this)) {
                             db.updateNote(noteId, titleToSave, contentToSave);
                         }
+                        updateSpinner.setVisibility(View.GONE);
                         updateWidget();
                         finish();
                     }
@@ -214,6 +221,8 @@ public class EditWidget extends AppCompatActivity {
                     @Override
                     public void onError(String errorMessage) {
                         update.setEnabled(true);
+                        update.setText("Update");
+                        updateSpinner.setVisibility(View.GONE);
                         noteBrowseBar.setEnabled(browseNoteIds.size() > 1);
                         widgetText.setEnabled(true);
                         Toast.makeText(EditWidget.this,

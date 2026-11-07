@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+import android.widget.ProgressBar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,8 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     ArrayList<String> notePreviewList;
     private View highlightedDropRow;
     private View addNoteFooter;
+    private ProgressBar homeSyncProgress;
+    private boolean isSyncingServerNotes;
 
     @Override
     protected void onResume() {
@@ -58,6 +61,7 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
         setSupportActionBar(myToolbar);
 
         mydb = new DBHelper(this);
+        homeSyncProgress = findViewById(R.id.homeSyncProgress);
 
         noteIdList = new ArrayList<Integer>();
         noteNameList = new ArrayList<String>();
@@ -318,15 +322,23 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
     }
 
     private void syncServerNotes() {
-        if (!ApiConfig.isSupabaseConfigured(this)) return;
+        if (!ApiConfig.isSupabaseConfigured(this) || isSyncingServerNotes) return;
+        isSyncingServerNotes = true;
+        homeSyncProgress.setVisibility(View.VISIBLE);
         SupabaseAuthManager.getSignedInEmail(this, new SupabaseAuthManager.Callback() {
             @Override
             public void onSuccess(String email) {
-                if (email == null || email.isEmpty() || isFinishing() || isDestroyed()) return;
+                if (email == null || email.isEmpty() || isFinishing() || isDestroyed()) {
+                    finishServerNoteSync();
+                    return;
+                }
                 ApiService.fetchOnlineNotes(Home.this, new ApiService.ApiCallback<List<ApiService.ServerNote>>() {
                     @Override
                     public void onSuccess(List<ApiService.ServerNote> notes) {
-                        if (isFinishing() || isDestroyed()) return;
+                        if (isFinishing() || isDestroyed()) {
+                            finishServerNoteSync();
+                            return;
+                        }
                         ArrayList<String> serverOnlineIds = new ArrayList<>();
                         try (DBHelper db = new DBHelper(Home.this)) {
                             for (ApiService.ServerNote note : notes) {
@@ -339,10 +351,12 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
                         }
                         refreshArrayList();
                         updateWidget();
+                        finishServerNoteSync();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
+                        finishServerNoteSync();
                         if (!errorMessage.contains("Sign in to your Supabase account") && !isFinishing()) {
                             Toast.makeText(Home.this, "Could not refresh server notes: " + errorMessage,
                                     Toast.LENGTH_LONG).show();
@@ -354,8 +368,14 @@ public class Home extends AppCompatActivity implements CustomAdapter.TalkToActiv
             @Override
             public void onError(String errorMessage) {
                 // Local notes remain available while Supabase is unreachable.
+                finishServerNoteSync();
             }
         });
+    }
+
+    private void finishServerNoteSync() {
+        isSyncingServerNotes = false;
+        if (homeSyncProgress != null && !isDestroyed()) homeSyncProgress.setVisibility(View.GONE);
     }
 
     private void openNewNote() {

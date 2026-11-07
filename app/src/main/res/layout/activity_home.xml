@@ -18,6 +18,19 @@
         android:theme="@style/ThemeOverlay.AppCompat.DayNight.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.DayNight" />
 
+    <ProgressBar
+        android:id="@+id/homeSyncProgress"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_alignTop="@id/home_toolbar"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="68dp"
+        android:layout_marginTop="18dp"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:contentDescription="Refreshing notes" />
+
     <ListView
         android:id="@+id/noteListView"
         android:layout_width="match_parent"

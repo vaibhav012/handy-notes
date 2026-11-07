@@ -13,4 +13,5 @@
 - `NoteView` tracks the initial fetch and explicit update in progress, disables the editor and Save button during the fetch, and disables Save during the update.
 - `EditWidget` disables the text editor, Update button, and note browse bar during the initial fetch. Explicit online Update disables Update and browsing until the API callback.
 - The server remains authoritative for the linked UUID when the client fetches. These UI locks prevent overlapping edits during the active fetch/update, but they do not provide cross-device locking or conflict resolution for changes made after a fetch completes.
+- The app Save and widget Update actions share `Widget.HandyNotes.PrimaryActionButton`, including a muted disabled style. During fetch/save they change their labels to `Loading…` or `Saving…`; a small spinner appears during server updates. Home shows a small toolbar-area spinner while signed-in server notes are being refreshed.
 

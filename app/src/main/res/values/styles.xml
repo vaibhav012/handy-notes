@@ -1,4 +1,9 @@
 <resources>
+    <style name="Widget.HandyNotes.PrimaryActionButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/widget_update_button</item>
+        <item name="android:textColor">@color/widget_update_button_text</item>
+    </style>
+
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight">

@@ -34,6 +34,7 @@ public class NoteView extends AppCompatActivity {
     private SwitchCompat onlineSyncSwitch;
     private TextView syncStatusText;
     private Button saveButton;
+    private View saveSpinner;
     private boolean serverFetchInProgress;
     private boolean serverUpdateInProgress;
     private String originalNoteText;
@@ -136,6 +137,7 @@ public class NoteView extends AppCompatActivity {
                 | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         saveButton = (Button) findViewById(R.id.saveButton);
+        saveSpinner = findViewById(R.id.saveSpinner);
         updateSaveEnabledState();
         saveButton.setOnClickListener(v -> saveNote());
 
@@ -191,7 +193,9 @@ public class NoteView extends AppCompatActivity {
     }
 
     private void updateSaveEnabledState() {
-        if (saveButton != null) saveButton.setEnabled(!serverFetchInProgress && !serverUpdateInProgress);
+        if (saveButton == null) return;
+        saveButton.setEnabled(!serverFetchInProgress && !serverUpdateInProgress);
+        saveButton.setText(serverFetchInProgress ? "Loading…" : serverUpdateInProgress ? "Saving…" : "Save");
     }
 
     private void activateOnlineSync() {
@@ -452,6 +456,7 @@ public class NoteView extends AppCompatActivity {
                 final String contentToSave = noteText;
                 serverUpdateInProgress = true;
                 updateSaveEnabledState();
+                saveSpinner.setVisibility(View.VISIBLE);
                 noteName.setEnabled(false);
                 noteNote.setEnabled(false);
                 syncStatusText.setVisibility(View.VISIBLE);
@@ -463,6 +468,7 @@ public class NoteView extends AppCompatActivity {
                         originalNoteText = contentToSave;
                         originalNoteName = titleToSave;
                         serverUpdateInProgress = false;
+                        saveSpinner.setVisibility(View.GONE);
                         Toast.makeText(NoteView.this, "Saved locally and on server", Toast.LENGTH_SHORT).show();
                         updateWidget();
                         finish();
@@ -471,6 +477,7 @@ public class NoteView extends AppCompatActivity {
                     @Override
                     public void onError(String errorMessage) {
                         serverUpdateInProgress = false;
+                        saveSpinner.setVisibility(View.GONE);
                         syncStatusText.setText("Server update failed; your edits are still here");
                         updateSaveEnabledState();
                         noteName.setEnabled(true);
