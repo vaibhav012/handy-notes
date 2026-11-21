@@ -20,7 +20,6 @@ import androidx.core.app.TaskStackBuilder;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 public class EditWidget extends AppCompatActivity {
 
@@ -81,9 +80,7 @@ public class EditWidget extends AppCompatActivity {
         ProgressBar updateSpinner = findViewById(R.id.updateSpinner);
         SeekBar noteBrowseBar = findViewById(R.id.noteBrowseBar);
         final boolean[] serverFetchInProgress = {false};
-        final boolean[] userEdited = {false};
         final boolean[] loadingLocalNote = {true};
-        widgetText.setOnContentChangedListener(markdown -> { if (!loadingLocalNote[0]) userEdited[0] = true; });
 
         noteTitle.setOnClickListener(v -> openNoteInApp());
 
@@ -93,66 +90,6 @@ public class EditWidget extends AppCompatActivity {
             String noteContent = mydb.getNote(noteId);
             widgetText.setContent(noteContent);
             loadingLocalNote[0] = false;
-
-            // Refetch in background if note is online
-            if (mydb.isNoteOnline(noteId)) {
-                String onlineId = mydb.getOnlineId(noteId);
-                if (!onlineId.isEmpty()) {
-                    serverFetchInProgress[0] = true;
-                    update.setEnabled(false);
-                    update.setText("Loading…");
-                    noteBrowseBar.setEnabled(false);
-                    widgetText.setEnabled(false);
-                    refreshSpinner.setVisibility(View.VISIBLE);
-                    ApiService.fetchOnlineNotes(this, new ApiService.ApiCallback<List<ApiService.ServerNote>>() {
-                        @Override
-                        public void onSuccess(List<ApiService.ServerNote> notes) {
-                            serverFetchInProgress[0] = false;
-                            refreshSpinner.setVisibility(View.GONE);
-                            ApiService.ServerNote currentNote = null;
-                            ArrayList<String> serverOnlineIds = new ArrayList<>();
-                            try (DBHelper db = new DBHelper(EditWidget.this)) {
-                                for (ApiService.ServerNote note : notes) {
-                                    if (note.onlineId != null && !note.onlineId.trim().isEmpty()) {
-                                        serverOnlineIds.add(note.onlineId);
-                                        db.upsertOnlineNote(note.onlineId, note.title, note.content);
-                                        if (onlineId.equals(note.onlineId)) currentNote = note;
-                                    }
-                                }
-                                db.deleteOnlineNotesMissingFrom(serverOnlineIds);
-                            }
-                            updateWidget();
-                            if (currentNote == null) {
-                                Toast.makeText(EditWidget.this,
-                                        "This note was deleted from the server.", Toast.LENGTH_LONG).show();
-                                finish();
-                                return;
-                            }
-                            if (!userEdited[0] && currentNote.content != null) {
-                                widgetText.setContent(currentNote.content);
-                                widgetText.requestEditorFocus();
-                            }
-                            if (currentNote.title != null && !currentNote.title.trim().isEmpty()) {
-                                noteTitle.setText(currentNote.title.trim());
-                            }
-                            update.setEnabled(true);
-                            update.setText("Update");
-                            noteBrowseBar.setEnabled(true);
-                            widgetText.setEnabled(true);
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            serverFetchInProgress[0] = false;
-                            refreshSpinner.setVisibility(View.GONE);
-                            update.setEnabled(true);
-                            update.setText("Update");
-                            noteBrowseBar.setEnabled(true);
-                            widgetText.setEnabled(true);
-                        }
-                    });
-                }
-            }
         }
 
         widgetText.requestEditorFocus();
@@ -164,14 +101,19 @@ public class EditWidget extends AppCompatActivity {
         ArrayList<Integer> notesNeedingOnlineSync = new ArrayList<>();
         noteBrowseBar.setMax(Math.max(0, browseNoteIds.size() - 1));
         int initialIndex = browseNoteIds.indexOf(noteId);
-        noteBrowseBar.setProgress(initialIndex < 0 ? 0 : initialIndex);
-        noteBrowseBar.setEnabled(!serverFetchInProgress[0] && browseNoteIds.size() > 1);
+        noteBrowseBar.setProgress(Math.max(0, initialIndex));
+        noteBrowseBar.setEnabled(browseNoteIds.size() > 1);
+
+        // Fetch single opened note in background if it is online
+        fetchSingleOnlineNote(noteId, update, widgetText, noteTitle, refreshSpinner,
+                serverFetchInProgress);
+
         final int[] dragStartNoteId = {noteId};
         noteBrowseBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && progress >= 0 && progress < browseNoteIds.size()) {
-                    userEdited[0] = false;
-                    selectBrowseNote(browseNoteIds.get(progress), widgetText, noteTitle, notesNeedingOnlineSync);
+                    selectBrowseNote(browseNoteIds.get(progress), widgetText, noteTitle, notesNeedingOnlineSync,
+                            update, refreshSpinner, serverFetchInProgress, loadingLocalNote);
                 }
             }
 
@@ -203,10 +145,9 @@ public class EditWidget extends AppCompatActivity {
                 final String titleToSave = noteName;
                 final String contentToSave = newText;
                 update.setEnabled(false);
-                update.setText("Saving…");
                 updateSpinner.setVisibility(View.VISIBLE);
                 noteBrowseBar.setEnabled(false);
-                widgetText.setEnabled(false);
+                widgetText.setEditorEnabled(false);
                 ApiService.updateOnlineNote(EditWidget.this, onlineId, titleToSave, contentToSave, new ApiService.ApiCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean result) {
@@ -221,10 +162,10 @@ public class EditWidget extends AppCompatActivity {
                     @Override
                     public void onError(String errorMessage) {
                         update.setEnabled(true);
-                        update.setText("Update");
                         updateSpinner.setVisibility(View.GONE);
                         noteBrowseBar.setEnabled(browseNoteIds.size() > 1);
-                        widgetText.setEnabled(true);
+                        widgetText.setEditorEnabled(true);
+                        widgetText.requestEditorFocus();
                         Toast.makeText(EditWidget.this,
                                 "Server update failed; edits remain unsaved locally. " + errorMessage,
                                 Toast.LENGTH_LONG).show();
@@ -258,8 +199,68 @@ public class EditWidget extends AppCompatActivity {
         return noteIds;
     }
 
+    private void fetchSingleOnlineNote(int targetNoteId, Button update,
+                                       RichNoteEditor widgetText, TextView noteTitle,
+                                       ProgressBar refreshSpinner, boolean[] serverFetchInProgress) {
+        String onlineId;
+        try (DBHelper db = new DBHelper(this)) {
+            if (!db.isNoteOnline(targetNoteId)) return;
+            onlineId = db.getOnlineId(targetNoteId);
+        }
+        if (onlineId == null || onlineId.isEmpty()) return;
+
+        serverFetchInProgress[0] = true;
+        if (targetNoteId == noteId) {
+            update.setEnabled(false);
+            widgetText.setEditorEnabled(false);
+            refreshSpinner.setVisibility(View.VISIBLE);
+        }
+
+        ApiService.fetchOnlineNote(this, onlineId, new ApiService.ApiCallback<>() {
+            @Override
+            public void onSuccess(ApiService.NoteSyncResult result) {
+                if (targetNoteId != noteId) {
+                    return;
+                }
+                serverFetchInProgress[0] = false;
+                refreshSpinner.setVisibility(View.GONE);
+                if (result != null && result.onlineId != null) {
+                    try (DBHelper db = new DBHelper(EditWidget.this)) {
+                        String fetchedTitle = result.title != null ? result.title : "";
+                        String fetchedContent = result.content != null ? result.content : "";
+                        db.updateNote(targetNoteId, fetchedTitle, fetchedContent);
+                    }
+                    updateWidget();
+                    if (result.content != null) {
+                        widgetText.setContent(result.content);
+                    }
+                    if (result.title != null && !result.title.trim().isEmpty()) {
+                        noteTitle.setText(result.title.trim());
+                    }
+                }
+                update.setEnabled(true);
+                widgetText.setEditorEnabled(true);
+                widgetText.requestEditorFocus();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                if (targetNoteId != noteId) {
+                    return;
+                }
+                serverFetchInProgress[0] = false;
+                refreshSpinner.setVisibility(View.GONE);
+                update.setEnabled(true);
+                widgetText.setEditorEnabled(true);
+                widgetText.requestEditorFocus();
+            }
+        });
+    }
+
     private void selectBrowseNote(int destinationNoteId, RichNoteEditor widgetText, TextView noteTitle,
-                                  ArrayList<Integer> notesNeedingOnlineSync) {
+                                  ArrayList<Integer> notesNeedingOnlineSync, Button update,
+                                  ProgressBar refreshSpinner, boolean[] serverFetchInProgress,
+                                  boolean[] loadingLocalNote) {
         if (destinationNoteId == noteId) return;
         String currentTitle;
         boolean currentIsOnline;
@@ -271,6 +272,7 @@ public class EditWidget extends AppCompatActivity {
         if (currentIsOnline && !notesNeedingOnlineSync.contains(noteId)) notesNeedingOnlineSync.add(noteId);
 
         noteId = destinationNoteId;
+        loadingLocalNote[0] = true;
         try (DBHelper db = new DBHelper(this)) {
             String title = db.getNoteName(noteId);
             noteTitle.setText(title == null || title.trim().isEmpty() || title.equals("NULL")
@@ -278,10 +280,19 @@ public class EditWidget extends AppCompatActivity {
             widgetText.setContent(db.getNote(noteId));
             widgetText.requestEditorFocus();
         }
+        loadingLocalNote[0] = false;
+
+        refreshSpinner.setVisibility(View.GONE);
+        update.setEnabled(true);
+        widgetText.setEditorEnabled(true);
+
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putInt("widget_note_" + appWidgetId, noteId).apply();
         }
+
+        fetchSingleOnlineNote(noteId, update, widgetText, noteTitle, refreshSpinner,
+                serverFetchInProgress);
     }
 
     private void syncQueuedNotes(ArrayList<Integer> noteIds) {
@@ -300,9 +311,9 @@ public class EditWidget extends AppCompatActivity {
                     new ApiService.ApiCallback<Boolean>() {
                         @Override public void onSuccess(Boolean result) { }
                         @Override public void onError(String errorMessage) {
-                            android.widget.Toast.makeText(EditWidget.this,
+                            Toast.makeText(EditWidget.this,
                                     "Saved locally. Server update failed: " + errorMessage,
-                                    android.widget.Toast.LENGTH_LONG).show();
+                                    Toast.LENGTH_LONG).show();
                         }
                     });
         }

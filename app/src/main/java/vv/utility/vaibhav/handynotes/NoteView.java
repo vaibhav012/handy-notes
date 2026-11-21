@@ -195,7 +195,6 @@ public class NoteView extends AppCompatActivity {
     private void updateSaveEnabledState() {
         if (saveButton == null) return;
         saveButton.setEnabled(!serverFetchInProgress && !serverUpdateInProgress);
-        saveButton.setText(serverFetchInProgress ? "Loading…" : serverUpdateInProgress ? "Saving…" : "Save");
     }
 
     private void activateOnlineSync() {

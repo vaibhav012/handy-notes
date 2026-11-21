@@ -2,11 +2,14 @@ package vv.utility.vaibhav.handynotes;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
+import android.text.InputType;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -82,14 +85,14 @@ public class RichNoteEditor extends LinearLayout {
         editor = new EditText(context);
         editor.setGravity(Gravity.TOP | Gravity.START);
         editor.setSingleLine(false);
-        editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
-                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        editor.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         editor.setTextColor(getResources().getColor(R.color.on_background, context.getTheme()));
         editor.setHintTextColor(getResources().getColor(R.color.outline, context.getTheme()));
         editor.setHint("Start writing…");
         editor.setTextSize(15);
-        editor.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        editor.setBackgroundColor(Color.TRANSPARENT);
         editor.setPadding(dp(4), dp(8), dp(4), dp(8));
         editor.setVerticalScrollBarEnabled(true);
         editor.setNestedScrollingEnabled(true);
@@ -111,6 +114,7 @@ public class RichNoteEditor extends LinearLayout {
             }
         });
         editor.setOnTouchListener((view, event) -> {
+            if (!isEditorEnabled()) return false;
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 pressedTaskState = taskStateAt(event.getX(), event.getY());
                 return pressedTaskState >= 0;
@@ -129,6 +133,7 @@ public class RichNoteEditor extends LinearLayout {
             return false;
         });
         editor.setOnKeyListener((view, keyCode, event) -> {
+            if (!isEditorEnabled()) return false;
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_ENTER) return insertContinuedLine();
             if (keyCode == KeyEvent.KEYCODE_DEL) return removePrefixAtLineStart();
@@ -138,6 +143,18 @@ public class RichNoteEditor extends LinearLayout {
         setContent("");
     }
 
+    public void setEditorEnabled(boolean enabled) {
+        if (editor != null) {
+            editor.setEnabled(enabled);
+            editor.setFocusable(enabled);
+            editor.setFocusableInTouchMode(enabled);
+        }
+    }
+
+    public boolean isEditorEnabled() {
+        return editor != null && editor.isEnabled();
+    }
+
     private void addToolbarButton(LinearLayout toolbar, String label, String prefix) {
         TextView button = new TextView(getContext());
         button.setText(label);
@@ -145,7 +162,7 @@ public class RichNoteEditor extends LinearLayout {
         button.setTextColor(markerColor);
         button.setPadding(dp(10), dp(9), dp(10), dp(9));
         button.setBackgroundResource(android.R.drawable.list_selector_background);
-        button.setOnClickListener(v -> applyPrefix(prefix));
+        button.setOnClickListener(v -> { if (isEditorEnabled()) applyPrefix(prefix); });
         toolbar.addView(button);
     }
 
@@ -156,7 +173,7 @@ public class RichNoteEditor extends LinearLayout {
         button.setTextColor(markerColor);
         button.setPadding(dp(10), dp(9), dp(10), dp(9));
         button.setBackgroundResource(android.R.drawable.list_selector_background);
-        button.setOnClickListener(v -> wrapSelection(delimiter));
+        button.setOnClickListener(v -> { if (isEditorEnabled()) wrapSelection(delimiter); });
         toolbar.addView(button);
     }
 
@@ -330,7 +347,7 @@ public class RichNoteEditor extends LinearLayout {
         if (editor.getLayout() == null) return -1;
         int vertical = (int) (touchY - editor.getTotalPaddingTop() + editor.getScrollY());
         if (vertical < 0) return -1;
-        android.text.Layout layout = editor.getLayout();
+        Layout layout = editor.getLayout();
         int visualLine = layout.getLineForVertical(vertical);
         int lineStart = layout.getLineStart(visualLine);
         int lineEnd = Math.min(layout.getLineEnd(visualLine), editor.length());

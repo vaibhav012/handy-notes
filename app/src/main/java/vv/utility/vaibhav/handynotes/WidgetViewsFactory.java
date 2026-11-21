@@ -18,6 +18,7 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
     private Context ctxt = null;
     private Intent intent = null;
     private int noteId = -1;
+    private int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 
     public WidgetViewsFactory(Context ctxt, Intent intent) {
         this.ctxt = ctxt;
@@ -27,7 +28,7 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
 
     private void updateItems() {
         if (ctxt == null) return;
-        int appWidgetId = intent != null ? intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) : AppWidgetManager.INVALID_APPWIDGET_ID;
+        appWidgetId = intent != null ? intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) : AppWidgetManager.INVALID_APPWIDGET_ID;
         int currentNoteId = -1;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctxt);
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -113,6 +114,8 @@ public class WidgetViewsFactory implements RemoteViewsService.RemoteViewsFactory
         Intent i = new Intent();
         Bundle extras = new Bundle();
         if (noteId > 0 && position >= 0 && position < items.length) {
+            extras.putInt("noteId", noteId);
+            extras.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             extras.putString("noteText", items[position]);
         }
         i.putExtras(extras);
